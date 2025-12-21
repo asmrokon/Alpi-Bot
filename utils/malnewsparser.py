@@ -3,7 +3,7 @@ import json
 import aiohttp
 from html import unescape
 import xml.etree.ElementTree as ET
-
+from datetime import datetime
 
 rss_link = "https://myanimelist.net/rss/news.xml"
 
@@ -47,9 +47,12 @@ async def fetch_latest_news():
                 
     # category = str(item.findtext("category",""))
 
-    title = item.findtext("title","")
+    title = item.findtext("title","Title")
 
-    description = unescape(item.findtext("description",""))
+    date = item.findtext("pubDate","Sun, 21 Dec 1456 08:24:44 -0800")
+    timestamp = get_timestamp(date)
+
+    description = unescape(item.findtext("description","Description"))
                 
     namespaces = {
             "content": "http://purl.org/rss/1.0/modules/content/",
@@ -67,7 +70,8 @@ async def fetch_latest_news():
         "title": title,
         "description": description,
         "image_url": image_url,
-        "news_url": news_url
+        "news_url": news_url,
+        "timestamp": timestamp
             }
 
 
@@ -95,3 +99,14 @@ def get_last_news_title():
         return e
 
 
+def get_timestamp(date):
+
+    date_str = "Sun, 21 Dec 2025 08:24:44 -0800"
+
+    # Parse the string including timezone
+    dt = datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %z")
+
+    # Convert to UNIX timestamp (seconds since epoch)
+    timestamp = int(dt.timestamp())
+
+    return timestamp

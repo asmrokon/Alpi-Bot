@@ -52,10 +52,10 @@ Thumbs.db
 .env.*
 
 # Runtime / data files (do not commit local runtime state)
-# last_news.json
-# database/*.db
-# database/*.sqlite3
-# database/*.sqlite
+last_news.json
+database/*.db
+database/*.sqlite3
+database/*.sqlite
 
 # Logs and temporary files
 *.log

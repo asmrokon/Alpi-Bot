@@ -3,6 +3,7 @@ import json
 import aiohttp
 from html import unescape
 import xml.etree.ElementTree as ET
+from datetime import datetime, timezone
 
 
 crunchyroll_rss_link = "https://cr-news-api-service.prd.crunchyrollsvc.com/v1/en-US/rss"
@@ -47,9 +48,12 @@ async def fetch_latest_news():
                 
     category = str(item.findtext("category",""))
 
-    title = item.findtext("title","")
+    title = item.findtext("title","Title")
 
-    description = item.findtext("description","")
+    description = item.findtext("description","Description")
+
+    date = item.findtext("pubDate","Sun, 21 Dec 1100 17:00:00 GMT")
+    timestamp = get_timestamp(date)
                 
     namespaces = {
             "content": "http://purl.org/rss/1.0/modules/content/",
@@ -77,7 +81,8 @@ async def fetch_latest_news():
         "description": description,
         "content": content,
         "image_url": image_url,
-        "news_url": news_url
+        "news_url": news_url,
+        "timestamp": timestamp
             }
 
     if category:
@@ -106,3 +111,17 @@ def get_last_news_title():
         return ""
     
 
+
+def get_timestamp(date):
+    date_str = "Sun, 21 Dec 2025 17:00:00 GMT"
+
+    # Parse the string
+    dt = datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S GMT")
+
+    # Set timezone to UTC
+    dt = dt.replace(tzinfo=timezone.utc)
+
+    # Convert to UNIX timestamp (integer seconds)
+    timestamp = int(dt.timestamp())
+
+    return timestamp

@@ -24,17 +24,19 @@ logger.addHandler(file_handler)
 
 # INTENTS
 intents = discord.Intents.default()
-
+intents.message_content = True
 
 bot = commands.Bot(command_prefix="!",intents=intents)
+
 
 async def main():
     await load_cogs()
     await bot.start(token)
     
 async def load_cogs():
-    await bot.load_extension("cogs.manga_cog")
-    await bot.load_extension("cogs.news_cog")
+    await bot.load_extension("cogs.manga")
+    await bot.load_extension("cogs.news")
+    await bot.load_extension("cogs.admin")
 
 @bot.event
 async def on_ready():
