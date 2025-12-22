@@ -128,7 +128,7 @@ class NewsCog(commands.Cog):
             )
 
 
-    @app_commands.command(name="unsubscribe",description="unSubscribe to Anime News")
+    @app_commands.command(name="unsubscribe",description="Unsubscribe to Anime News")
     @app_commands.describe(source="Choose a news source")
     async def unsubscribe(self, interaction: discord.Interaction,source: Literal["Crunchyroll News","MyAnimeList News"]):
         src = str(source).lower()
