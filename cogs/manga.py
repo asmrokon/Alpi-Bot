@@ -1,9 +1,9 @@
 from discord.ext import commands
 from discord import Embed, Color, ButtonStyle, app_commands
 from discord.ui import Button, View
+from discord import ui
 import discord
 from typing import Literal
-from random import choice
 from os import getenv
 import asyncio
 
@@ -130,7 +130,7 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
 
 
     #* View for displaying and interacting with a single manga
-    class SingleMangaView(View):
+    class SingleMangaView(ui.LayoutView):
         def __init__(self, manga_dicts, dc_id, source):
             super().__init__()
             self.manga_dicts = manga_dicts
@@ -141,15 +141,44 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
         #* Generate embed for current manga page
         async def single_manga_view(self):
             num = self.cur_page - 1
-            embed_manga = Embed(title=self.manga_dicts[num]["title"])
-            embed_manga.add_field(
-                name="",
-                value=f"**Latest Chapter**: {self.manga_dicts[num]["latest_chapter"]}\n**Authors**: {self.manga_dicts[num]["authors"]}\n**Artists**: {self.manga_dicts[num]["artists"]}\n\n{self.manga_dicts[num]["description"]}",
-            )
-            embed_manga.set_thumbnail(url=self.manga_dicts[num]["cover_url"])
-            embed_manga.set_footer(text=f"{self.cur_page}/{len(self.manga_dicts)}")
 
-            return embed_manga
+            self.clear_items()
+
+            container = ui.Container()
+
+            title = ui.TextDisplay(f"# {self.manga_dicts[num]['title']}")
+            container.add_item(title)
+
+            title_separator = ui.Separator(visible=True,spacing=discord.SeparatorSpacing.small)
+            container.add_item(title_separator)
+
+            infos = ui.TextDisplay(
+            f"**Latest Chapter**: {self.manga_dicts[num]["latest_chapter"]}\n**Authors**: {self.manga_dicts[num]["authors"]}\n**Artists**: {self.manga_dicts[num]["artists"]}\n{self.manga_dicts[num]["description"]}")
+            container.add_item(infos)
+
+            cover = ui.MediaGallery(discord.MediaGalleryItem(self.manga_dicts[num]["cover_url"]))
+            container.add_item(cover)
+
+            footer = ui.TextDisplay(f"-# **{self.cur_page}/{len(self.manga_dicts)}**")
+            container.add_item(footer)
+
+            buttons_row = ui.ActionRow()
+
+            previous_button = Button(emoji="<:leftarrow:1452580179133333546>", style=ButtonStyle.secondary)
+            previous_button.callback = self.previous_manga
+
+            remove_button = Button(emoji="<:bin:1452580173546520576>", style=ButtonStyle.secondary)
+            remove_button.callback = self.remove_manga
+
+            next_button = Button(emoji="<:rightarrow:1452580175735951390>", style=ButtonStyle.secondary)
+            next_button.callback = self.next_manga
+
+            buttons_row.add_item(previous_button)
+            buttons_row.add_item(remove_button)
+            buttons_row.add_item(next_button)
+
+            self.add_item(container)
+            self.add_item(buttons_row)
 
         #* Remove manga from user's list
         async def remove_manga(self, interaction):
@@ -193,13 +222,14 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
 
             if (self.cur_page - 1) == 0:
                 self.cur_page = total_page
-                embed = await self.single_manga_view()
-                await interaction.response.edit_message(embed=embed, view=self)
+                await self.single_manga_view()
+                
+                await interaction.response.edit_message(view=self)
             else:
                 self.cur_page -= 1
                 await self.single_manga_view()
-                embed = await self.single_manga_view()
-                await interaction.response.edit_message(embed=embed, view=self)
+                
+                await interaction.response.edit_message(view=self)
 
         #* Go to next manga in the list
         async def next_manga(self, interaction):
@@ -212,83 +242,254 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
             if (self.cur_page + 1) > total_page:
                 self.cur_page = 1
                 await self.single_manga_view()
-                embed = await self.single_manga_view()
-                await interaction.response.edit_message(embed=embed, view=self)
+                
+                await interaction.response.edit_message(view=self)
             else:
                 self.cur_page += 1
                 await self.single_manga_view()
-                embed = await self.single_manga_view()
-                await interaction.response.edit_message(embed=embed, view=self)
+                
+                await interaction.response.edit_message(view=self)
 
-    #* View for selecting manga to remove from list
-    class ToRemoveListView(View):
-        def __init__(self, display_name, manga_dicts, dc_id, icon_url,source):
+
+
+    class CompactMangaView(ui.LayoutView):
+        def __init__(self, manga_dicts, dc_id, name, source,limit):
             super().__init__()
             self.manga_dicts = manga_dicts
-            self.display_name = display_name
-            self.dc_id = dc_id
-            self.icon_url = icon_url
+            self.name = name
             self.source = source
+            self.dc_id = dc_id
 
-        #* Generate embed for manga removal selection
-        async def to_remove_list(self):
-            embed = Embed(title="")
-            for idx, manga in enumerate(self.manga_dicts, start=1):
-                embed.add_field(
-                    name=f"{idx}. {manga['title']}",
-                    value="",
-                    inline=False,
+            self.limit_per_page = limit
+            self.cur_page = 0
+            self.total_page = ((len(manga_dicts) - 1) // self.limit_per_page) + 1
+
+        #* Generate embed for current manga page
+        async def single_page_view(self):
+            self.clear_items()
+
+            start_index = self.limit_per_page * self.cur_page
+            last_index = start_index + self.limit_per_page            
+
+            container = ui.Container()
+
+            container.add_item(ui.TextDisplay(f"## {self.name}'s Manga List"))
+            container.add_item(ui.Separator(visible=True,spacing=discord.SeparatorSpacing.small))
+
+            for manga in self.manga_dicts[start_index:last_index]:
+                section = ui.Section(
+                    ui.TextDisplay(f"### {manga['title']}\n**Latest Chapter**: {manga["latest_chapter"]}\n**Authors**: {manga["authors"]}\n**Artists**: {manga["artists"]}"),
+                    accessory=ui.Thumbnail(manga["cover_url"])
                 )
-            embed.set_footer(text="Select the number of the manga you want to remove")
-            embed.set_author(
-                name=f"{self.display_name}'s Manga List", icon_url=self.icon_url
-            )
-            return embed
+                container.add_item(section)
+                container.add_item(ui.Separator(visible=True,spacing=discord.SeparatorSpacing.small))                
 
-        #* Add buttons for each manga in the list
-        async def add_button(self):
-            for num in range(len(self.manga_dicts)):
-                button = Button(
-                    label=f"{num+1}", custom_id=f"{num}", style=ButtonStyle.secondary
-                )
-                button.callback = self.on_button_click
-                self.add_item(button)
+            footer = ui.TextDisplay(f"-# **{self.cur_page+1}/{self.total_page}  ·  Total {len(self.manga_dicts)} Mangas**")
+            container.add_item(footer)
 
-        #* Callback for button click to remove selected manga
-        async def on_button_click(self, interaction):
+            
+            buttons_row = ui.ActionRow()
+
+            previous_button = Button(emoji="<:leftarrow:1452580179133333546>", style=ButtonStyle.secondary)
+            previous_button.callback = self.previous_page
+
+            next_button = Button(emoji="<:rightarrow:1452580175735951390>", style=ButtonStyle.secondary)
+            next_button.callback = self.next_page
+
+            buttons_row.add_item(previous_button)
+            buttons_row.add_item(next_button)
+
+            self.add_item(container)
+            self.add_item(buttons_row)
+
+        
+        #* Go to next manga in the list
+        async def next_page(self, interaction):
             if interaction.user.id != self.dc_id:
                 await interaction.response.send_message(
                     "Scratch! This button is not yours to play with!", ephemeral=True
                 )
                 return
             
-            clicked_id = int(interaction.data["custom_id"])
-            title = self.manga_dicts[clicked_id]["title"]
 
+            if (self.cur_page + 1) == self.total_page:
+                self.cur_page = 0
 
-            await remove_manga_from_comick(self.dc_id, self.manga_dicts[clicked_id]["slug"])
-            
-            del self.manga_dicts[clicked_id]
-            await self.update_to_remove_list(interaction, title)
+                await self.single_page_view()
+                await interaction.response.edit_message(view=self)
+            else:
+                self.cur_page += 1
 
-        #* Update embed and buttons after removal
-        async def update_to_remove_list(self, interaction, title):
-            if len(self.manga_dicts) == 0:
-                for item in self.children:
-                    self.remove_item(item)
-                await interaction.response.edit_message(
-                    embed=embed_messages["all_removed"], view=self
+                await self.single_page_view()
+                await interaction.response.edit_message(view=self)
+
+        #* Go to previous manga page
+        async def previous_page(self, interaction):
+            if interaction.user.id != self.dc_id:
+                await interaction.response.send_message(
+                    "Scratch! This button is not yours to play with!", ephemeral=True
                 )
+                return
+
+
+            if (self.cur_page) == 0:
+                self.cur_page = self.total_page - 1
+
+                await self.single_page_view()                
+                await interaction.response.edit_message(view=self)
+            else:
+                self.cur_page -= 1
+
+                await self.single_page_view()
+                await interaction.response.edit_message(view=self)
+
+
+    class RemoveMangaView(ui.LayoutView):
+        def __init__(self, manga_dicts, dc_id, name, source,limit):
+            super().__init__()
+            self.manga_dicts = manga_dicts
+            self.name = name
+            self.source = source
+            self.dc_id = dc_id
+
+            self.limit_per_page = limit
+            self.cur_page = 0
+            self.total_page = ((len(self.manga_dicts) - 1) // self.limit_per_page) + 1
+
+        #* Generate embed for current manga page
+        async def single_page_view(self):
+            self.clear_items()
+
+            self.total_page = ((len(self.manga_dicts) - 1) // self.limit_per_page) + 1
+
+            start_index = self.limit_per_page * self.cur_page
+            last_index = start_index + self.limit_per_page            
+
+            container = ui.Container()
+
+            container.add_item(ui.TextDisplay(f"## {self.name}'s Manga List"))
+            container.add_item(ui.Separator(visible=True,spacing=discord.SeparatorSpacing.small))
+
+            for idx, manga in enumerate(self.manga_dicts[start_index:last_index],start=0):
+                section = ui.Section(
+                    ui.TextDisplay(f"### {manga['title']}\n**Latest Chapter**: {manga["latest_chapter"]}\n**Authors**: {manga["authors"]}\n**Artists**: {manga["artists"]}"),
+                    accessory=ui.Thumbnail(manga["cover_url"])
+                )
+                container.add_item(section)
+                
+                custom_id = f"{self.cur_page * self.limit_per_page + idx}_{len(self.manga_dicts[start_index:last_index])}"
+                remove_button = Button(label="Remove",style=ButtonStyle.gray,custom_id=custom_id)
+                remove_button.callback = self.remove_manga
+
+                remove_button_section = ui.Section(
+                    ui.TextDisplay("-# **Click Here to Remove the Manga**"),
+                    accessory=remove_button)
+
+                container.add_item(remove_button_section)
+
+                container.add_item(ui.Separator(visible=True,spacing=discord.SeparatorSpacing.small))  
+
+            footer = ui.TextDisplay(f"-# **{self.cur_page+1}/{self.total_page}  ·  Total {len(self.manga_dicts)} Mangas**")
+            container.add_item(footer)
+
+            
+            buttons_row = ui.ActionRow()
+
+            previous_button = Button(emoji="<:leftarrow:1452580179133333546>", style=ButtonStyle.secondary)
+            previous_button.callback = self.previous_page
+
+            next_button = Button(emoji="<:rightarrow:1452580175735951390>", style=ButtonStyle.secondary)
+            next_button.callback = self.next_page
+
+            buttons_row.add_item(previous_button)
+            buttons_row.add_item(next_button)
+
+            self.add_item(container)
+            self.add_item(buttons_row)
+
+
+        async def remove_manga(self, interaction):
+            if interaction.user.id != self.dc_id:
+                await interaction.response.send_message(
+                    "Scratch! This button is not yours to play with!", ephemeral=True
+                )
+                return
+
+            custom_id, total_manga = str(interaction.data['custom_id']).split("_")
+            custom_id = int(custom_id)
+            total_manga = int(total_manga)
+            
+
+            await remove_manga_from_comick(self.dc_id, self.manga_dicts[custom_id]["slug"])
+
+            
+            title = self.manga_dicts[custom_id]["title"]
+
+            del self.manga_dicts[custom_id]
+            if len(self.manga_dicts) == 0:
+
+                self.clear_items()
+
+                self.add_item(ui.TextDisplay("Removed all manga"))
+
+                await interaction.response.edit_message(view=self)
                 await interaction.followup.send(
-                    f"Nyaa... the treat **{title}** has been removed.", ephemeral=True
+                    f"Nyaa... the treat **{title}** has been removed.",
+                    ephemeral=True,
                 )
             else:
-                new_embed = await self.to_remove_list()
-                for _ in self.children:
-                    self.remove_item(_)
-                await self.add_button()
-                await interaction.response.edit_message(embed=new_embed, view=self)
-                await interaction.followup.send(f"Nyaa... the treat **{title}** has been removed.", ephemeral=True)
+                
+                if total_manga == 1:
+                    await self.previous_page(interaction)
+                else:
+                    await self.single_page_view()
+                    await interaction.response.edit_message(view=self)
+
+                await interaction.followup.send(
+                    f"Nyaa... the treat **{title}** has been removed.",
+                    ephemeral=True,
+                )
+
+        
+        async def next_page(self, interaction):
+            if interaction.user.id != self.dc_id:
+                await interaction.response.send_message(
+                    "Scratch! This button is not yours to play with!", ephemeral=True
+                )
+                return
+            
+
+            if (self.cur_page + 1) == self.total_page:
+                self.cur_page = 0
+
+                await self.single_page_view()
+                await interaction.response.edit_message(view=self)
+            else:
+                self.cur_page += 1
+
+                await self.single_page_view()
+                await interaction.response.edit_message(view=self)
+
+        #* Go to previous manga page
+        async def previous_page(self, interaction):
+            if interaction.user.id != self.dc_id:
+                await interaction.response.send_message(
+                    "Scratch! This button is not yours to play with!", ephemeral=True
+                )
+                return
+
+
+            if (self.cur_page) == 0:
+                self.cur_page = self.total_page - 1
+
+                await self.single_page_view()                
+                await interaction.response.edit_message(view=self)
+            else:
+                self.cur_page -= 1
+
+                await self.single_page_view()
+                await interaction.response.edit_message(view=self)
+
 
 
 
@@ -396,41 +597,23 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
 
         #* shows manga in compact mode
         if mode == "Compact":
-            embed = Embed(title="")
+            name = interaction.user.display_name
 
-            for idx, manga in enumerate(manga_dicts, start=1):
-                embed.add_field(
-                    name=f"{idx}. {manga['title']}",
-                    value=f"Latest Chapter: {manga['latest_chapter']}",
-                    inline=False,
-                )
-            embed.set_author(
-                name=f"{interaction.user.display_name}'s Manga List",
-                icon_url=interaction.user.display_avatar.url,)
+            # layout_view = self.CompactMangaView(limit=3,manga_dicts=manga_dicts,dc_id=dc_id,name=name,source="comick")
 
-            await interaction.response.send_message(embed=embed)
+            layout_view = self.CompactMangaView(limit=3,manga_dicts=manga_dicts,dc_id=dc_id,name=name,source="comick")
+
+            await layout_view.single_page_view()
+          
+            await interaction.response.send_message(view=layout_view)
 
         #* shows manga in detailed mode
         elif mode == "Detailed":
-            view_detailed = self.SingleMangaView(manga_dicts, dc_id, "comick")
+            layout_view = self.SingleMangaView(manga_dicts, dc_id, "comick")
 
-            previous_button = Button(label="Previous", style=ButtonStyle.secondary)
-            previous_button.callback = view_detailed.previous_manga
-
-            remove_button = Button(label="Remove", style=ButtonStyle.danger)
-            remove_button.callback = view_detailed.remove_manga
-
-            next_button = Button(label="Next", style=ButtonStyle.secondary)
-            next_button.callback = view_detailed.next_manga
-
-            view_detailed.add_item(previous_button)
-            view_detailed.add_item(next_button)
-            view_detailed.add_item(remove_button)
-
-            embed_single_manga = await view_detailed.single_manga_view()
-            await interaction.response.send_message(
-                embed=embed_single_manga, view=view_detailed
-            )
+            await layout_view.single_manga_view()
+            
+            await interaction.response.send_message(view=layout_view)
 
 
 
@@ -438,21 +621,20 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
 
         if mode == "Select":
             dc_id = interaction.user.id
-            display_name = interaction.user.display_name
-            icon_url = interaction.user.display_avatar.url
             manga_dicts = await get_manga_list_of_a_user_from_comick(dc_id)
+
             if manga_dicts == []:
                 await interaction.response.send_message(
                     embed=embed_messages["no_manga_to_remove"]
                 )
                 return
 
-            view = self.ToRemoveListView(display_name, manga_dicts, dc_id, icon_url,source="comick")
+            display_name = interaction.user.display_name
 
-            await view.add_button()
-            embed = await view.to_remove_list()
+            layout_view = self.RemoveMangaView(limit=3,manga_dicts=manga_dicts,dc_id=dc_id,name=display_name,source="comick")
+            await layout_view.single_page_view()
 
-            await interaction.response.send_message(embed=embed, view=view)
+            await interaction.response.send_message(view=layout_view)
 
         else:
             dc_id = interaction.user.id
@@ -548,6 +730,33 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
         return embed_notification
 
 
+    class ChapterNotification(ui.LayoutView):
+        def __init__(self,title,latest_chapter,cover_url,slug):
+            super().__init__()
+
+            self.title = title
+            self.latest_chapter = latest_chapter
+            self.cover_url = cover_url
+            self.slug = slug
+
+        async def notification(self):
+            container = ui.Container()
+
+            title = ui.TextDisplay(f"### Purr! **{self.title}** just dropped a new chapter!\nCan you believe it's chapter **{self.latest_chapter}** already?")
+            container.add_item(title)
+
+            cover = ui.MediaGallery(discord.MediaGalleryItem(self.cover_url))
+            container.add_item(cover)
+
+            self.add_item(container)
+
+            button_row = ui.ActionRow()
+            link_button = Button(label="Link", style=ButtonStyle.link, url=f"https://comick.dev/comic/{self.slug}")
+
+            button_row.add_item(link_button)
+
+            self.add_item(button_row)
+
 
     #* Background task to check comick manga feeds for updates
     async def check_feed_comick(self):
@@ -561,7 +770,6 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
             #* channels
             excep_error_channel = self.bot.get_channel(error_log_channel_id)
 
-
             if slugs_and_dc_ids_and_latest_chap_list:
                 for slug_and_dc_ids_and_latest_chap in slugs_and_dc_ids_and_latest_chap_list:
                     if slug_and_dc_ids_and_latest_chap:
@@ -572,16 +780,12 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
                         latest_chapter = slug_and_dc_ids_and_latest_chap["latest_chapter"]
                         cover_url = await get_cover_url_using_slug(slug)
 
-                        view = View()
-                        link_button = Button(label="Link", style=ButtonStyle.link, url=f"https://comick.dev/comic/{slug}")
-                        view.add_item(link_button)
+                        layout_view = self.ChapterNotification(title=title,latest_chapter=latest_chapter,cover_url=cover_url,slug=slug)
 
-                        for dc_id in dc_ids:
-                            embed_notification = choice(
-                                [self.embed_notification_1, self.embed_notification_2]
-                            )(title, latest_chapter, cover_url)
-                            embed_notification.set_author(name="Comick",icon_url="https://comick.dev/_next/image?url=%2Fstatic%2Ficons%2Funicorn-64.png&w=144&q=75")
-                            
+                        await layout_view.notification()
+
+
+                        for dc_id in dc_ids:                            
                             try:
                                 user = self.bot.get_user(dc_id)
                                 if user is None:
@@ -594,7 +798,7 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
                                             f"Could not fetch {dc_id}'s user info to send Notification"
                                         )   
 
-                                await user.send(embed=embed_notification, view=view)
+                                await user.send(view=layout_view)
                             except discord.Forbidden:
                                 await excep_error_channel.send(
                                     f"Could not DM. {user.name}'s DM is locked. DISCORD ID: `{user.id}`"
