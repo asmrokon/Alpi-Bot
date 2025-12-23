@@ -8,8 +8,8 @@ from typing import Literal
 from utils.db import update_subscribscription, get_subscribers_list
 from os import getenv
 
-from utils.crollparser import get_latest_croll_news
-from utils.malnewsparser import get_latest_mal_news
+from utils.crollparser import get_latest_croll_news, get_latest_croll_news_from_source
+from utils.malnewsparser import get_latest_mal_news, get_latest_mal_news_from_source
 
 
 error_log_channel_id = int(getenv("error_log_channel_id"))
@@ -43,7 +43,7 @@ class NewsCog(commands.Cog):
                 title = ui.TextDisplay(content=f"## {self.news['title']}")
                 container.add_item(title)
                 container.add_item(ui.Separator(spacing=discord.SeparatorSpacing.small))
-
+                
                 if self.source == "mal":
                     content = ui.TextDisplay(content=self.news["description"])
                 elif self.source == "croll":
@@ -58,12 +58,66 @@ class NewsCog(commands.Cog):
                 action_row = ui.ActionRow()
                 link_button = Button(label="Link", style=ButtonStyle.link, url=self.news["news_url"])
                 action_row.add_item(link_button)
+                
                 self.add_item(action_row)
 
+    @app_commands.command(name="news",description="View the latest anime news from various sources")
+    @app_commands.describe(source="Select a news source")
+    @app_commands.user_install()
+    async def news(self, interaction: discord.Interaction,source: Literal["Crunchyroll News","MyAnimeList News"]):
+        src = str(source).lower()
+
+        await interaction.response.defer()
+
+        if src == "crunchyroll news":
+            result = await get_latest_croll_news_from_source()
+            new = result["new_news"]
+            news = result["news"]
+
+            if news:
+                if new:
+                    news_view = self.NewsView(news,"croll")
+                    await news_view.news_cv2()             
+                    
+                    await interaction.followup.send(view=news_view)
+                    await self.check_news_croll()
+                
+                else:       
+                    news_view = self.NewsView(news=news,source="croll")
+                    await news_view.news_cv2()     
+
+                    await interaction.followup.send(view=news_view)
+            else:
+                await interaction.followup.send(content="Nyaa... something went wrong fetching the news. Try again later!")            
 
 
-    @app_commands.command(name="subscribe",description="Subscribe to Anime News")
-    @app_commands.describe(source="Choose a news source")
+
+        elif src == "myanimelist news":
+            result = await get_latest_mal_news_from_source()
+            new = result["new_news"]
+            news = result["news"]
+
+            if news:
+                if new:
+                    news_view = self.NewsView(news,"mal")
+                    await news_view.news_cv2()             
+                    
+                    await interaction.followup.send(view=news_view)
+                    await self.check_news_mal()
+                
+                else:       
+                    news_view = self.NewsView(news=news,source="mal")
+                    await news_view.news_cv2()     
+
+                    await interaction.followup.send(view=news_view)
+            else:
+                await interaction.followup.send(content="Nyaa... something went wrong fetching the news. Try again later!")            
+
+
+
+
+    @app_commands.command(name="subscribe",description="Subscribe to Anime News updates")
+    @app_commands.describe(source="Select a news source")
     @app_commands.user_install()
     async def subscribe(self, interaction: discord.Interaction,source: Literal["Crunchyroll News","MyAnimeList News"]):
         src = str(source).lower()
@@ -85,8 +139,8 @@ class NewsCog(commands.Cog):
             )
 
 
-    @app_commands.command(name="unsubscribe",description="Unsubscribe to Anime News")
-    @app_commands.describe(source="Choose a news source")
+    @app_commands.command(name="unsubscribe",description="Unsubscribe from Anime News updates")
+    @app_commands.describe(source="Select a news source")
     @app_commands.user_install()
     async def unsubscribe(self, interaction: discord.Interaction,source: Literal["Crunchyroll News","MyAnimeList News"]):
         src = str(source).lower()
@@ -155,7 +209,7 @@ class NewsCog(commands.Cog):
                             f"Could not send News to `{dc_id}`\nError:```{e}```"
                         )                    
  
-            await asyncio.sleep(10)
+            await asyncio.sleep(60)
             
 
 
@@ -204,7 +258,7 @@ class NewsCog(commands.Cog):
 
 
             
-            await asyncio.sleep(10)
+            await asyncio.sleep(60)
         
 
 async def setup(bot):

@@ -8,6 +8,18 @@ from datetime import datetime
 rss_link = "https://myanimelist.net/rss/news.xml"
 
 
+async def get_latest_mal_news_from_source():
+    news = await fetch_latest_news()
+    last_news_title = get_last_news_title()
+
+    if news and (news["title"] != last_news_title):        
+        return {"new_news": True,"news": news}
+    elif news:
+        return {"new_news": False,"news": news}
+    else:
+        return {"new_news": True,"news": {}}
+
+
 async def get_latest_mal_news():
     news = await fetch_latest_news()
     last_news_title = get_last_news_title()
