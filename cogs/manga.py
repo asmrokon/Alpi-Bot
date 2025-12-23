@@ -117,6 +117,7 @@ embed_messages = {
 
 
 #* MangaCog class for manga management commands
+@app_commands.user_install()
 class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
     def __init__(self, bot):
         self.bot = bot
@@ -249,7 +250,6 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
                 await self.single_manga_view()
                 
                 await interaction.response.edit_message(view=self)
-
 
 
     class CompactMangaView(ui.LayoutView):
