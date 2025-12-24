@@ -8,31 +8,47 @@ from datetime import datetime
 rss_link = "https://myanimelist.net/rss/news.xml"
 
 
-async def get_latest_mal_news_from_source():
-    news = await fetch_latest_news()
-    last_news_title = get_last_news_title()
+async def get_latest_mal_news_list_from_source():
+    fetched_news_list = await fetch_latest_news_list()
+    seen_news = get_seen_news_list()
+    seen_news_titles = get_seen_news_titles_list()
 
-    if news and (news["title"] != last_news_title):        
-        return {"new_news": True,"news": news}
-    elif news:
-        return {"new_news": False,"news": news}
+    if fetched_news_list and is_new_news(seen_news_titles,fetched_news_list):        
+        return {"new_news": True,"news": fetched_news_list}
+    elif fetched_news_list:
+        return {"new_news": False,"news": fetched_news_list}
     else:
-        return {"new_news": True,"news": {}}
+        return {"new_news": False,"news": seen_news}
 
 
-async def get_latest_mal_news():
-    news = await fetch_latest_news()
-    last_news_title = get_last_news_title()
 
-    if news and (news["title"] != last_news_title):
-        update_news(news)
+def is_new_news(seen_news_titles,latest_news_list):
+    is_new = []
+    for news in latest_news_list:
+        if news["title"] not in seen_news_titles:
+            is_new.append(news)                    
 
-        return news
+    if is_new:
+        return True
     else:
-        return ""
+        False
 
 
-async def fetch_latest_news():
+
+def get_timestamp(date):
+    dt = datetime.strptime(date, "%a, %d %b %Y %H:%M:%S %z")
+    timestamp = int(dt.timestamp())
+
+    return timestamp
+
+
+
+async def fetch_latest_news_list():
+    namespaces = {
+            "content": "http://purl.org/rss/1.0/modules/content/",
+            "media": "http://search.yahoo.com/mrss/"
+                }
+
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(rss_link) as html:
@@ -53,72 +69,98 @@ async def fetch_latest_news():
         print("Invalid RSS XML")
         return None
     
-    item = feed.find(".//item")
-    if item is None:
+    items = feed.findall(".//item")[:10]
+    if items is None:
         return None
+    
+    news_list = []
+
+    for number, item in enumerate(items,start=1):
+
+        title = item.findtext("title","Title")
+        date = item.findtext("pubDate","Sun, 20 Dec 1456 08:24:44 -0800")
+        timestamp = get_timestamp(date)
+        description = unescape(item.findtext("description","Description"))
+        news_url = item.findtext("link","https://myanimelist.net/news")
+        image_url = item.findtext("media:thumbnail","",namespaces)
+
+        news = {
+                "title": title,
+                "description": description,
+                "image_url": image_url,
+                "news_url": news_url,
+                "timestamp": timestamp
+                }
                 
+        news_list.append(news)
+        
+    return news_list
     # category = str(item.findtext("category",""))
 
-    title = item.findtext("title","Title")
 
-    date = item.findtext("pubDate","Sun, 21 Dec 1456 08:24:44 -0800")
-    timestamp = get_timestamp(date)
+async def get_latest_mal_news_list():
+    latest_news_list = []
+    fetched_news_list = await fetch_latest_news_list()
+    last_news_titles = get_seen_news_titles_list()
 
-    description = unescape(item.findtext("description","Description"))
-                
-    namespaces = {
-            "content": "http://purl.org/rss/1.0/modules/content/",
-            "media": "http://search.yahoo.com/mrss/"
-                }
+    if fetched_news_list:
+        if last_news_titles:
+            for news in fetched_news_list:
+                if news["title"] not in last_news_titles:
+                    latest_news_list.append(news)        
+            update_news_list(fetched_news_list)
+            return latest_news_list
 
-                   
-
-
-    news_url = item.findtext("link","https://myanimelist.net/news")
-
-    image_url = item.findtext("media:thumbnail","",namespaces)
-
-    news = {
-        "title": title,
-        "description": description,
-        "image_url": image_url,
-        "news_url": news_url,
-        "timestamp": timestamp
-            }
-
-
-    return news
-
-
-
-def update_news(news):
-    with open("last_news.json","r") as f:
-        data = json.load(f)
-        data["mal"] = news
-    with open("last_news.json","w") as f:
-        json.dump(data,f,indent=4)
-
-
-def get_last_news_title():
-    try:
-        with open("last_news.json","r") as f:
-            data = json.load(f)
-        if data and data["mal"]["title"]:
-            return data["mal"]["title"]
         else:
-            return "aa"
-    except Exception as e:
-        return e
+            update_news_list(fetched_news_list)
+            
+            return fetched_news_list
+    else:
+        return []
+    
+    
 
 
-def get_timestamp(date):
 
-    date_str = "Sun, 21 Dec 2025 08:24:44 -0800"
 
-    # Parse the string including timezone
-    dt = datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %z")
+def update_news_list(news_list):
+    with open("last_mal_news.json","w") as f:
+        json.dump(news_list,f,indent=4)
 
-    # Convert to UNIX timestamp (seconds since epoch)
-    timestamp = int(dt.timestamp())
 
-    return timestamp
+def get_seen_news_titles_list():
+    title_list = []
+    try:
+        with open("last_mal_news.json","r") as f:
+            news_list = json.load(f)
+        if news_list:
+            for news in news_list:                
+                title_list.append(news["title"])
+            return title_list
+
+        else:
+            return []
+    except Exception as e:  # noqa: F841
+        return []
+
+
+
+def get_seen_news_list():
+    seen_list = []
+    try:
+        with open("last_mal_news.json","r") as f:
+            news_list = json.load(f)
+        if news_list:
+            for news in news_list:                
+                seen_list.append(news)
+            return seen_list
+
+        else:
+            return []
+    except Exception as e:  # noqa: F841
+        return []
+
+
+# asyncio.run(get_latest_mal_news_list())
+
+# get_last_news_titles_list()
