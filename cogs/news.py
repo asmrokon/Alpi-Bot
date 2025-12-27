@@ -202,7 +202,7 @@ class NewsCog(commands.Cog):
                     await layout_view.single_news_view()
                     
                     await interaction.followup.send(view=layout_view)
-                    await self.check_news_croll()
+                    await self.check_news_croll(once=True)
                 else:       
                     layout_view = self.SingleNewsView(news_list=news_list,source="croll",dc_id=interaction.user.id)
                     await layout_view.single_news_view()
@@ -225,7 +225,7 @@ class NewsCog(commands.Cog):
                     await layout_view.single_news_view()
                     
                     await interaction.followup.send(view=layout_view)
-                    await self.check_news_mal()
+                    await self.check_news_mal(once=True)
                 else:       
                     layout_view = self.SingleNewsView(news_list=news_list,source="mal",dc_id=interaction.user.id)
                     await layout_view.single_news_view()
@@ -284,13 +284,55 @@ class NewsCog(commands.Cog):
 
 
 
-    async def check_news_croll(self):
+    async def check_news_croll(self,once=False):
         await self.bot.wait_until_ready()
 
         excep_error_channel = self.bot.get_channel(error_log_channel_id)
+        if once:
+            while True:
+                #* gets news dict
+                news_list = await get_latest_croll_news_list()
+                if news_list:
+                    for news in reversed(news_list):
+                        news_view = self.NewsView(news,"croll")
 
-        while True:
-            #* gets news dict
+                        await news_view.news_cv2()
+
+                        dc_ids = await get_subscribers_list("croll")
+
+                        for dc_id in dc_ids:
+                            try:
+                                user = self.bot.get_user(dc_id)
+                                if user is None:
+                                    try:
+                                        user = await self.bot.fetch_user(dc_id)
+                                    except discord.NotFound:
+                                        await excep_error_channel.send(f"User `{dc_id} does not exist at all.")
+                                    except discord.HTTPException:
+                                        await excep_error_channel.send(
+                                            f"Could not fetch {dc_id}'s user info to send News"
+                                        )                         
+
+                                await user.send(view=news_view)
+                            except discord.Forbidden:
+                                await excep_error_channel.send(
+                                    f"Could not DM. {user.name}'s DM is locked. DISCORD ID: `{user.id}`"
+                                    )
+                            except discord.NotFound:
+                                await excep_error_channel.send(
+                                    f"Could not send News: User with ID `{dc_id}` not found (may have deleted their account or been banned)."
+                                )
+                            except discord.HTTPException:
+                                await excep_error_channel.send(
+                                    f"Could not fetch {dc_id}'s user info to send News"
+                                )
+                            except Exception as e:
+                                await excep_error_channel.send(
+                                    f"Could not send News to `{dc_id}`\nError:```{e}```"
+                                )                    
+    
+                await asyncio.sleep(360)
+        else:
             news_list = await get_latest_croll_news_list()
             if news_list:
                 for news in reversed(news_list):
@@ -329,18 +371,57 @@ class NewsCog(commands.Cog):
                         except Exception as e:
                             await excep_error_channel.send(
                                 f"Could not send News to `{dc_id}`\nError:```{e}```"
-                            )                    
- 
-            await asyncio.sleep(60)
-            
+                            )  
 
 
-    async def check_news_mal(self):
+    async def check_news_mal(self,once=False):
         await self.bot.wait_until_ready()
 
         excep_error_channel = self.bot.get_channel(error_log_channel_id)
+        if once:
+            while True:
+                news_list = await get_latest_mal_news_list()
+                if news_list:
+                    for news in reversed(news_list):
+                        news_view = self.NewsView(news,"mal")
+                        await news_view.news_cv2()
 
-        while True:
+                        dc_ids = await get_subscribers_list("mal")
+                        for dc_id in dc_ids:
+                            try:
+                                user = self.bot.get_user(dc_id)
+                                if user is None:
+                                    try:
+                                        user = await self.bot.fetch_user(dc_id)
+                                    except discord.NotFound:
+                                        await excep_error_channel.send(f"User `{dc_id} does not exist at all.")
+                                    except discord.HTTPException:
+                                        await excep_error_channel.send(
+                                            f"Could not fetch {dc_id}'s user info to send News"
+                                        )                         
+
+                                await user.send(view=news_view)
+                            except discord.Forbidden:
+                                await excep_error_channel.send(
+                                    f"Could not DM. {user.name}'s DM is locked. DISCORD ID: `{user.id}`"
+                                    )
+                            except discord.NotFound:
+                                await excep_error_channel.send(
+                                    f"Could not send News: User with ID `{dc_id}` not found (may have deleted their account or been banned)."
+                                )
+                            except discord.HTTPException:
+                                await excep_error_channel.send(
+                                    f"Could not fetch {dc_id}'s user info to send News"
+                                )
+                            except Exception as e:
+                                await excep_error_channel.send(
+                                    f"Could not send News to `{dc_id}`\nError:```{e}```"
+                                )             
+
+
+                
+                await asyncio.sleep(360)
+        else:
             news_list = await get_latest_mal_news_list()
             if news_list:
                 for news in reversed(news_list):
@@ -380,8 +461,7 @@ class NewsCog(commands.Cog):
                             )             
 
 
-            
-            await asyncio.sleep(360)
+                
         
 
 async def setup(bot):
