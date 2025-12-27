@@ -288,7 +288,7 @@ class NewsCog(commands.Cog):
         await self.bot.wait_until_ready()
 
         excep_error_channel = self.bot.get_channel(error_log_channel_id)
-        if once:
+        if not once:
             while True:
                 #* gets news dict
                 news_list = await get_latest_croll_news_list()
@@ -378,7 +378,7 @@ class NewsCog(commands.Cog):
         await self.bot.wait_until_ready()
 
         excep_error_channel = self.bot.get_channel(error_log_channel_id)
-        if once:
+        if not once:
             while True:
                 news_list = await get_latest_mal_news_list()
                 if news_list:
