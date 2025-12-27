@@ -99,11 +99,11 @@ class NewsCog(commands.Cog):
             buttons_row = ui.ActionRow()
             link_button = Button(label="View on Web", style=ButtonStyle.link, url=self.news_list[num]["news_url"])
             
-            previous_button = Button(emoji="<:leftarrow:1452580179133333546>", style=ButtonStyle.secondary)
+            previous_button = Button(emoji="<:leftarrow:1453438612774326304>", style=ButtonStyle.secondary)
             previous_button.callback = self.previous_news
             
 
-            next_button = Button(emoji="<:rightarrow:1452580175735951390>", style=ButtonStyle.secondary)
+            next_button = Button(emoji="<:rightarrow:1453438615362338847>", style=ButtonStyle.secondary)
             next_button.callback = self.next_news
 
             footer_button = Button(label=f"{self.cur_page}/{len(self.news_list)}",style=ButtonStyle.secondary,disabled=True)
