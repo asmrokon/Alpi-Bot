@@ -47,7 +47,7 @@ async def has_new_chapter(manga):
     
     for stored_manga in stored_manga_list:
         if manga["slug"] == stored_manga["slug"]:
-            if manga["latest_chapter"] and stored_manga["latest_chapter"]:
+            if manga["latest_chapter"]:
                 if int(manga["latest_chapter"]) > int(stored_manga["latest_chapter"]):                    
                     to_notify_users_ids = await get_dc_ids_using_slug(manga["slug"]) 
                     if to_notify_users_ids:

@@ -804,42 +804,45 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
         msg = await interaction.original_response()
 
         if status == 200:            
-            #* gets manga info in dict
-            success, manga = await get_manga_info_from_comick(slug)
-            if success and isinstance(manga,dict):
-                #* checks if it is already in the list or not and then add it if not in list
-                if not await is_duplicate("comick",interaction.user.id, manga["slug"]):    
+            #* checks if it is already in the list or not and then add it if not in list
+            if not await is_duplicate("comick",interaction.user.id, slug):    
+                #* gets manga info in dict  
+                success, manga = await get_manga_info_from_comick(slug)
+                if success and isinstance(manga,dict):
+                    dc_ids_n_slug = await has_new_chapter(manga=manga)
+                    if dc_ids_n_slug:
+                        await self.notify_users(dc_ids_n_slug,manga)
                     await write_info_comick(dc_id=interaction.user.id, manga=manga)
                     await msg.edit(embed=embed_messages["added"])
                 else:
-                    await msg.edit(embed=embed_messages["duplicate_manga"])
+                    #* sends error msg in chat
+                    embed = Embed(
+                        title="Data Fetch Failed 🐾",
+                        description="Paw... I tried, but the data will not come. Tell the owner!",
+                        color=Color.red(),
+                    )
+                    await msg.edit(embed=embed)
+
+                    excep_error_channel = self.bot.get_channel(error_log_channel_id)
+
+                    #* send error message in log
+                    fetch_error_embed = Embed(
+                        title="Data Fetch Failed (Slash Command)", color=Color.red()
+                    )
+                    fetch_error_embed.add_field(
+                        name="User",
+                        value=f"Name: {interaction.user}\nID: `{interaction.user.id}`",
+                        inline=False,
+                    )
+                    fetch_error_embed.add_field(name="Command", value=f"{interaction.command.name}", inline=False)  # type: ignore
+                    fetch_error_embed.add_field(name="Channel", value=f"{interaction.channel}\nID: {interaction.channel.id}", inline=False)  # type: ignore
+                    fetch_error_embed.add_field(
+                        name="Fetch Target", value=f"```{manga}```", inline=False
+                    )
+                    fetch_error_embed.timestamp = interaction.created_at
+                    await excep_error_channel.send(embed=fetch_error_embed)
             else:
-                #* sends error msg in chat
-                embed = Embed(
-                    title="Data Fetch Failed 🐾",
-                    description="Paw... I tried, but the data will not come. Tell the owner!",
-                    color=Color.red(),
-                )
-                await msg.edit(embed=embed)
-
-                excep_error_channel = self.bot.get_channel(error_log_channel_id)
-
-                #* send error message in log
-                fetch_error_embed = Embed(
-                    title="Data Fetch Failed (Slash Command)", color=Color.red()
-                )
-                fetch_error_embed.add_field(
-                    name="User",
-                    value=f"Name: {interaction.user}\nID: `{interaction.user.id}`",
-                    inline=False,
-                )
-                fetch_error_embed.add_field(name="Command", value=f"{interaction.command.name}", inline=False)  # type: ignore
-                fetch_error_embed.add_field(name="Channel", value=f"{interaction.channel}\nID: {interaction.channel.id}", inline=False)  # type: ignore
-                fetch_error_embed.add_field(
-                    name="Fetch Target", value=f"```{manga}```", inline=False
-                )
-                fetch_error_embed.timestamp = interaction.created_at
-                await excep_error_channel.send(embed=fetch_error_embed)
+                await msg.edit(embed=embed_messages["duplicate_manga"])
 
         elif status in [400, 401, 403, 404]:
             await msg.edit(embed=embed_messages[f"{status}"])
@@ -967,37 +970,13 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
                 embed=embed_confirmation, view=view_confirmation
             )
 
-            
-
 
 
 
     """
                                             ///     FEED CHECKER      ///
     """     
-
-
-
-
-    #* Embed notification style 1 for new chapter
-    def embed_notification_1(self, title, latest_chapter, cover_url):
-        embed_notification = discord.Embed(
-            title=f"Meow! **{title}** has a fresh chapter, you're now up to chapter **{latest_chapter}**!",
-            color=discord.Color.orange(),
-        )
-        embed_notification.set_image(url=cover_url)
-        return embed_notification
-
-    #* Embed notification style 2 for new chapter
-    def embed_notification_2(self, title, latest_chapter, cover_url):
-        embed_notification = discord.Embed(
-            title=f"Purr! {title} just dropped a new chapter!",
-            description=f"Can you believe it's chapter {latest_chapter} already?",
-            color=discord.Color.purple(),
-        )
-        embed_notification.set_image(url=cover_url)
-        return embed_notification
-
+  
 
     class ChapterNotification(ui.LayoutView):
         def __init__(self,title,latest_chapter,cover_url,slug):
@@ -1097,6 +1076,43 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
         while True:
             await update_cover_url()
             await asyncio.sleep(86400)
+
+
+
+    """
+                                            ///     HELPER FUNCTIONS      ///
+    """     
+
+    async def notify_users(self,dc_ids_n_slug_list,manga):            
+        title = manga["title"]
+        latest_chapter = dc_ids_n_slug_list["latest_chapter"]
+        cover_url = manga["cover_url"]
+        slug = manga["slug"]
+        
+        layout_view = MangaCog.ChapterNotification(title=title,latest_chapter=latest_chapter,cover_url=cover_url,slug=slug)
+
+        await layout_view.notification()
+        
+        dc_ids = dc_ids_n_slug_list["dc_ids"]
+
+        for dc_id in dc_ids:                            
+            try:
+                user = self.bot.get_user(dc_id)                    
+                if user is None:
+                    try:
+                        user = await self.bot.fetch_user(dc_id)
+                    except discord.NotFound:
+                        await print(f"User `{dc_id} does not exist at all.")
+                    except discord.HTTPException:
+                        await print(
+                            f"Could not fetch {dc_id}'s user info to send Notification"
+                        )   
+
+                await user.send(view=layout_view)                
+            except Exception as e:
+                await print(
+                    f"Could not send notification to `{dc_id}`\nError:```{e}```"
+                ) 
 
 
     """
