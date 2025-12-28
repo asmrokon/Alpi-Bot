@@ -229,8 +229,11 @@ async def write_info_comick(dc_id,manga):
 insert or ignore into mangas
 (slug,hid,title,authors,artists,latest_chapter,cover_url,description)
 values (?,?,?,?,?,?,?,?)
+on conflict(slug) do update set
+    cover_url = excluded.cover_url
 """,(manga["slug"],manga["hid"],manga["title"],manga["authors"],manga["artists"],manga["latest_chapter"],manga["cover_url"],manga["description"]))
-        
+        await db.commit()
+             
         #* writes in user_manga table
         await db.execute(
 """
