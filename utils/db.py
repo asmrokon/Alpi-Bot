@@ -141,6 +141,21 @@ async def get_all_manga_list_from_db(source):
                 manga_dicts.append(dict(row)) #* type: ignore
     return manga_dicts
 
+#* Retrieve all manga records from the given source database as a list of dicts.
+async def get_all_manga_list_from_db_with_same_slugs(slug_list):
+    manga_dicts = []
+    db_path = get_db_path("comick")
+    async with connect(db_path) as db:
+        for slug in slug_list:
+            db.row_factory = Row    
+            async with db.execute("select * from mangas where slug = ?",(slug,)) as cursor:
+                async for row in cursor:
+                    manga_dicts.append(dict(row)) #* type: ignore
+
+    return manga_dicts
+
+
+
 
 
 #* Update the `latest_chapter` value for a manga identified by slug (comick DB).

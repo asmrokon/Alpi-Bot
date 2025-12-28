@@ -19,15 +19,26 @@ from utils.db import (
     is_duplicate,
     remove_manga_from_comick,
 )
-from utils.feedchecker import get_new_chapters_info
+from utils.feedchecker import get_new_chapters_info, has_new_chapter
+from utils.comicksearch import get_comick_search_result
 
 
 
 #* channel ID
 error_log_channel_id = int(getenv("error_log_channel_id"))
 
-
-
+# Emojies
+ongoing_emoji = "<:ongoing:1453695986311499890>"
+cancelled_emoji = "<:cancelled:1453695978157899863>"
+hiatus_emoji = "<:hiatus:1453695980355457225>"
+completed_emoji = "<:completed:1453695983245590661>"
+bookmark_emoji = "<:bookmark:1453666289003270310>"
+star_emoji = "<:star:1453667947070357646>"
+bin_emoji = "<:bin:1453439435973857513>"
+leftarrow_emoji = "<:leftarrow:1453438612774326304>"
+rightarrow_emoji = "<:rightarrow:1453438615362338847>"
+chapter_emoji = "<:chapter:1453761149542858772>"
+cursor_emoji = "<:cursor:1453762353505112097>"
 #* Predefined embed messages for various bot responses
 embed_messages = {
     "adding": Embed(
@@ -165,13 +176,13 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
 
             buttons_row = ui.ActionRow()
 
-            previous_button = Button(emoji="<:leftarrow:1452580179133333546>", style=ButtonStyle.secondary)
+            previous_button = Button(emoji="<:leftarrow:1453438612774326304>", style=ButtonStyle.secondary)
             previous_button.callback = self.previous_manga
 
-            remove_button = Button(emoji="<:bin:1452580173546520576>", style=ButtonStyle.secondary)
+            remove_button = Button(emoji="<:bin:1453439435973857513>", style=ButtonStyle.secondary)
             remove_button.callback = self.remove_manga
 
-            next_button = Button(emoji="<:rightarrow:1452580175735951390>", style=ButtonStyle.secondary)
+            next_button = Button(emoji="<:rightarrow:1453438615362338847>", style=ButtonStyle.secondary)
             next_button.callback = self.next_manga
 
             buttons_row.add_item(previous_button)
@@ -290,10 +301,10 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
             
             buttons_row = ui.ActionRow()
 
-            previous_button = Button(emoji="<:leftarrow:1452580179133333546>", style=ButtonStyle.secondary)
+            previous_button = Button(emoji="<:leftarrow:1453438612774326304>", style=ButtonStyle.secondary)
             previous_button.callback = self.previous_page
 
-            next_button = Button(emoji="<:rightarrow:1452580175735951390>", style=ButtonStyle.secondary)
+            next_button = Button(emoji="<:rightarrow:1453438615362338847>", style=ButtonStyle.secondary)
             next_button.callback = self.next_page
 
             buttons_row.add_item(previous_button)
@@ -382,7 +393,7 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
                 remove_button.callback = self.remove_manga
 
                 remove_button_section = ui.Section(
-                    ui.TextDisplay("-# **Click Here to Remove the Manga**"),
+                    ui.TextDisplay("-# **Remove from Library **"),
                     accessory=remove_button)
 
                 container.add_item(remove_button_section)
@@ -395,10 +406,10 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
             
             buttons_row = ui.ActionRow()
 
-            previous_button = Button(emoji="<:leftarrow:1452580179133333546>", style=ButtonStyle.secondary)
+            previous_button = Button(emoji="<:leftarrow:1453438612774326304>", style=ButtonStyle.secondary)
             previous_button.callback = self.previous_page
 
-            next_button = Button(emoji="<:rightarrow:1452580175735951390>", style=ButtonStyle.secondary)
+            next_button = Button(emoji="<:rightarrow:1453438615362338847>", style=ButtonStyle.secondary)
             next_button.callback = self.next_page
 
             buttons_row.add_item(previous_button)
@@ -491,10 +502,259 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
                 await interaction.response.edit_message(view=self)
 
 
+    class SearchResultView(ui.LayoutView):
+        def __init__(self, manga_dicts, dc_id, source, limit, searched_name,bot):
+            super().__init__()
+            self.manga_dicts = manga_dicts
+            self.source = source
+            self.dc_id = dc_id
+            self.searched_name = searched_name     
+            self.bot = bot       
+
+            self.limit_per_page = limit
+            self.cur_page = 0
+            self.total_page = ((len(self.manga_dicts) - 1) // self.limit_per_page) + 1
+
+        #* Generate embed for current manga page
+        async def single_page_view(self):
+            status_conv = {1:f"{ongoing_emoji} Ongoing", 2:f"{completed_emoji} Completed",3:f"{cancelled_emoji} Cancelled", 4:f"{hiatus_emoji} Hiatus"}  
+            self.clear_items()
+
+            self.total_page = ((len(self.manga_dicts) - 1) // self.limit_per_page) + 1
+
+            start_index = self.limit_per_page * self.cur_page
+            last_index = start_index + self.limit_per_page            
+
+            container = ui.Container()
+            
+
+            for idx, manga in enumerate(self.manga_dicts[start_index:last_index],start=0):
+                short_desc = f"{manga["description"][:180]}..." if len(manga["description"]) > 180 else manga["description"]
+
+                section = ui.Section(
+                    ui.TextDisplay(f"### {manga['title']}\n{chapter_emoji} Ch. {manga["latest_chapter"]}   •   {status_conv[int(manga["status"])]}   •   {star_emoji} {manga["rating"]}\n{short_desc}"),
+                    accessory=ui.Thumbnail(manga["cover_url"])
+                )
+                container.add_item(section)
+                
+                custom_id = f"{self.cur_page * self.limit_per_page + idx}_{len(self.manga_dicts[start_index:last_index])}"
+
+                if manga["status"] and (int(manga["status"]) == 1):
+                    add_button = Button(label="Add",emoji=bookmark_emoji,style=ButtonStyle.gray,custom_id=custom_id)
+                else:
+                    add_button = Button(label="Add",emoji=bookmark_emoji,style=ButtonStyle.gray,custom_id=custom_id,disabled=True)
+                add_button.callback = self.add_manga
+
+                web_view_button = Button(label="View on web",style=ButtonStyle.link,url=f"https://comick.dev/comic/{manga["slug"]}")
+                
+                section_buttons_row = ui.ActionRow()
+
+                section_buttons_row.add_item(add_button)
+                section_buttons_row.add_item(web_view_button)
+                container.add_item(section_buttons_row)
+
+                if idx != (self.limit_per_page - 1):
+                    container.add_item(ui.Separator(visible=True,spacing=discord.SeparatorSpacing.small))  
+
+                
+            buttons_row = ui.ActionRow()
+
+            previous_button = Button(emoji="<:leftarrow:1453438612774326304>", style=ButtonStyle.secondary)
+            previous_button.callback = self.previous_page
+
+            next_button = Button(emoji="<:rightarrow:1453438615362338847>", style=ButtonStyle.secondary)
+            next_button.callback = self.next_page
+
+            footer_button = Button(label=f"Page {self.cur_page+1} of {self.total_page}",style=ButtonStyle.secondary,disabled=True)
+            
+            navigate_row = ui.ActionRow()
+            navigate_select = ui.Select(placeholder="Navigate to...",)
+            
+            for i in range(self.total_page):                
+                navigate_select.append_option(discord.SelectOption(label=f"Page {i + 1}",value=str(i)))
+                                    
+            navigate_select.callback = self.navigate_to
+
+            buttons_row.add_item(previous_button)
+            buttons_row.add_item(footer_button)
+            buttons_row.add_item(next_button)
+            navigate_row.add_item(navigate_select)
+
+            self.add_item(container)
+            self.add_item(buttons_row)
+            self.add_item(navigate_row)
+
+
+        async def navigate_to(self,interaction: discord.Interaction):
+            page_num = int(interaction.data["values"][0])
+            self.cur_page = page_num
+
+            await self.single_page_view()
+            await interaction.response.edit_message(view=self)
+
+
+        async def add_manga(self, interaction: discord.Interaction):
+            await interaction.response.defer()
+            if interaction.user.id != self.dc_id:
+                await interaction.followup.send(
+                    "Scratch! This button is not yours to play with!", ephemeral=True
+                )
+                return
+
+            custom_id, total_manga = str(interaction.data['custom_id']).split("_")
+            custom_id = int(custom_id)
+            
+            
+            slug = self.manga_dicts[custom_id]["slug"]        
+
+            #* checks if it is already in the list or not and then add it if not in list
+            if not await is_duplicate("comick",interaction.user.id, slug):    
+                success, manga = await get_manga_info_from_comick(slug)                
+                if success and isinstance(manga,dict):                 
+                    dc_ids_n_slug = await has_new_chapter(manga=manga)
+                    if dc_ids_n_slug:
+                        await self.notify_users(dc_ids_n_slug,manga)
+                    await write_info_comick(dc_id=interaction.user.id, manga=manga)
+                    await interaction.followup.send(content=f"Nyaa... the treat **{self.manga_dicts[custom_id]["title"]}** has been added.",ephemeral=True)
+                else:
+                    #* sends error msg in chat
+                    embed = Embed(
+                        title="Data Fetch Failed 🐾",
+                        description="Paw... I tried, but the data will not come. Tell the owner!",
+                        color=Color.red(),
+                    )
+                    await interaction.followup.send(embed=embed,ephemeral=True)                               
+            else:
+                await interaction.followup.send(embed=embed_messages["duplicate_manga"],ephemeral=True)
+
+
+        async def notify_users(self,dc_ids_n_slug_list,manga):            
+            title = manga["title"]
+            latest_chapter = dc_ids_n_slug_list["latest_chapter"]
+            cover_url = manga["cover_url"]
+            slug = manga["slug"]
+            
+            layout_view = MangaCog.ChapterNotification(title=title,latest_chapter=latest_chapter,cover_url=cover_url,slug=slug)
+
+            await layout_view.notification()
+            
+            dc_ids = dc_ids_n_slug_list["dc_ids"]
+
+            for dc_id in dc_ids:                            
+                try:
+                    user = self.bot.get_user(dc_id)                    
+                    if user is None:
+                        try:
+                            user = await self.bot.fetch_user(dc_id)
+                        except discord.NotFound:
+                            await print(f"User `{dc_id} does not exist at all.")
+                        except discord.HTTPException:
+                            await print(
+                                f"Could not fetch {dc_id}'s user info to send Notification"
+                            )   
+
+                    await user.send(view=layout_view)                
+                except Exception as e:
+                    await print(
+                        f"Could not send notification to `{dc_id}`\nError:```{e}```"
+                    ) 
+
+        
+        async def next_page(self, interaction):
+            if interaction.user.id != self.dc_id:
+                await interaction.response.send_message(
+                    "Scratch! This button is not yours to play with!", ephemeral=True
+                )
+                return
+            
+
+            if (self.cur_page + 1) == self.total_page:
+                self.cur_page = 0
+
+                await self.single_page_view()
+                await interaction.response.edit_message(view=self)
+            else:
+                self.cur_page += 1
+
+                await self.single_page_view()
+                await interaction.response.edit_message(view=self)
+
+        #* Go to previous manga page
+        async def previous_page(self, interaction):
+            if interaction.user.id != self.dc_id:
+                await interaction.response.send_message(
+                    "Scratch! This button is not yours to play with!", ephemeral=True
+                )
+                return
+
+
+            if (self.cur_page) == 0:
+                self.cur_page = self.total_page - 1
+
+                await self.single_page_view()                
+                await interaction.response.edit_message(view=self)
+            else:
+                self.cur_page -= 1
+
+                await self.single_page_view()
+                await interaction.response.edit_message(view=self)
 
 
 #*                                            ///     SLASH COMMANDS (ADD,REMOVE,LIST)     ///
 
+
+    @app_commands.command(name="search",description="Search Comick.io for manga with optional filters")
+    @app_commands.describe(
+    title="Manga title or keywords to search on Comick.io",
+    status="Publication status filter (default: all statuses)",
+    demographic="Target demographic filter (default: all demographics)",
+    content_rating="Content rating filter (default: Safe and Suggestive)",
+    limit="Number of results to return per request (default: 15)",
+    sort="Result sorting method (currently not functional)")
+    async def search(
+                self,
+                interaction: discord.Interaction,
+                title: str,
+                status: Literal["Ongoing","Completed","Cancelled","Hiatus"] = None,
+                demographic: Literal["Shounen","Shoujo","Seinen","Josei"] = None,
+                content_rating: Literal["All","Safe","Suggestive","Erotica"] = None,
+                limit: Literal[5,10,15,20] = 15,
+                sort: Literal["follow","view","created_at","user_follow_count","uploaded","rating"] = None
+                    ):
+        title = title.lower()
+        status_conv = {"ongoing": 1, "completed": 2, "cancelled": 3, "hiatus": 4}   
+        demographic_conv = {"shounen": 1,"shoujo": 2,"seinen": 3,"josei": 4}
+        params= {
+                "type": "comic",                
+                "page": 1,
+                "limit": limit,                                
+                "q": title,
+                "content_rating": ["safe","suggestive"]
+                }
+        if status:
+            status = str(status).lower()
+            params["status"] = status_conv[status]
+        if demographic:
+            demographic = str(demographic).lower()
+            params["demographic"] = demographic_conv[demographic]   
+        if content_rating: 
+            if content_rating != "All":
+                params["content_rating"] = str(content_rating).lower()
+            elif content_rating == "All":                
+                del params["content_rating"]
+        if sort:
+            params["sort"] = str(sort).lower()
+
+        await interaction.response.defer()
+        
+        manga_list = await get_comick_search_result(params)        
+
+        if manga_list:            
+                view = self.SearchResultView(manga_dicts=manga_list,dc_id=interaction.user.id,source="comick",limit=3,searched_name=title,bot=self.bot)
+                await view.single_page_view()            
+                await interaction.followup.send(view=view)  
+        else:
+            await interaction.followup.send(content="Couldnt search")
 
 
     #* Slash command to add a manga to user's list
@@ -814,12 +1074,10 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
                             except Exception as e:
                                 await excep_error_channel.send(
                                     f"Could not send notification to `{dc_id}`\nError:```{e}```"
-                                )
-                        
-                        
-                        
-                        
-            await asyncio.sleep(1800)
+                                )                                                                                                        
+            await asyncio.sleep(3600)
+
+                         
 
 
     """
@@ -829,7 +1087,7 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
         await self.bot.wait_until_ready()
         while True:
             await update_cover_url()
-            await asyncio.sleep(3600)
+            await asyncio.sleep(86400)
 
 
 

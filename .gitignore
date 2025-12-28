@@ -75,3 +75,6 @@ pip-wheel-metadata/
 *.egg-info/
 build/
 dist/
+
+
+test/
