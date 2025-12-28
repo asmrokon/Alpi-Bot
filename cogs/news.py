@@ -14,9 +14,13 @@ from utils.malnewsparser import get_latest_mal_news_list_from_source, get_latest
 
 error_log_channel_id = int(getenv("error_log_channel_id"))
 def cooldown_for_everyone_but_me(interaction: discord.Interaction):
-    if interaction.user.id == 743831396874846229:
+    if interaction.user.id == 743831396874846229:        
         return None
-    return app_commands.Cooldown(rate=2,per=5)
+
+    if interaction.command.name == "news":
+        return app_commands.Cooldown(rate=2,per=10)
+    else:
+        return app_commands.Cooldown(rate=2,per=5)
 
 
 class NewsCog(commands.Cog):

@@ -128,7 +128,11 @@ embed_messages = {
 def cooldown_for_everyone_but_me(interaction: discord.Interaction):
     if interaction.user.id == 743831396874846229:
         return None
-    return app_commands.Cooldown(rate=2,per=5)
+                    
+    if interaction.command.name == "search":
+        return app_commands.Cooldown(rate=2,per=15)
+    else:
+        return app_commands.Cooldown(rate=2,per=5)
 
 
 
