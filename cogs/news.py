@@ -13,6 +13,10 @@ from utils.malnewsparser import get_latest_mal_news_list_from_source, get_latest
 
 
 error_log_channel_id = int(getenv("error_log_channel_id"))
+def cooldown_for_everyone_but_me(interaction: discord.Interaction):
+    if interaction.user.id == 743831396874846229:
+        return None
+    return app_commands.Cooldown(rate=2,per=5)
 
 
 class NewsCog(commands.Cog):
@@ -179,11 +183,18 @@ class NewsCog(commands.Cog):
                 await interaction.response.edit_message(view=self)
 
 
+#                                               APP COMMANDS
+
+    """
+                                        ///     APP COMMANDS      ///
+    """ 
+ 
 
 
     @app_commands.command(name="news",description="View the latest anime news from various sources")
     @app_commands.describe(source="Select a news source")
     @app_commands.user_install()
+    @app_commands.checks.dynamic_cooldown(cooldown_for_everyone_but_me)
     async def news(self, interaction: discord.Interaction,source: Literal["Crunchyroll News","MyAnimeList News"]):
         src = str(source).lower()
 
@@ -235,11 +246,10 @@ class NewsCog(commands.Cog):
                 await interaction.followup.send(content="Nyaa... something went wrong fetching the news. Try again later!")            
 
 
-
-
     @app_commands.command(name="subscribe",description="Subscribe to Anime News updates")
     @app_commands.describe(source="Select a news source")
     @app_commands.user_install()
+    @app_commands.checks.dynamic_cooldown(cooldown_for_everyone_but_me)
     async def subscribe(self, interaction: discord.Interaction,source: Literal["Crunchyroll News","MyAnimeList News"]):
         src = str(source).lower()
         if src == "crunchyroll news":
@@ -263,6 +273,7 @@ class NewsCog(commands.Cog):
     @app_commands.command(name="unsubscribe",description="Unsubscribe from Anime News updates")
     @app_commands.describe(source="Select a news source")
     @app_commands.user_install()
+    @app_commands.checks.dynamic_cooldown(cooldown_for_everyone_but_me)
     async def unsubscribe(self, interaction: discord.Interaction,source: Literal["Crunchyroll News","MyAnimeList News"]):
         src = str(source).lower()
         if src == "crunchyroll news":
@@ -282,6 +293,13 @@ class NewsCog(commands.Cog):
             ephemeral=True
             )
 
+
+#                                               RSS FEED CHECKER
+    
+    """
+                                        ///     RSS FEED CHECKER      ///
+    """ 
+ 
 
 
     async def check_news_croll(self,once=False):
@@ -461,6 +479,26 @@ class NewsCog(commands.Cog):
                             )             
 
 
+
+#                                               APP COMMAND ERROR HANDLER
+    """
+                                        ///     APP COMMAND ERROR HANDLER      ///
+    """ 
+    
+    @news.error
+    async def on_news_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        if isinstance(error,app_commands.CommandOnCooldown):
+            await interaction.response.send_message(content=f"{error}",ephemeral=True)
+
+    @subscribe.error
+    async def on_subscribe_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        if isinstance(error,app_commands.CommandOnCooldown):
+            await interaction.response.send_message(content=f"{error}",ephemeral=True)
+
+    @unsubscribe.error
+    async def on_unsubscribe_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        if isinstance(error,app_commands.CommandOnCooldown):
+            await interaction.response.send_message(content=f"{error}",ephemeral=True)
                 
         
 

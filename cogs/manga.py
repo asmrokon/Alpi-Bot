@@ -125,6 +125,11 @@ embed_messages = {
         color=Color.red(),
     ),
 }
+def cooldown_for_everyone_but_me(interaction: discord.Interaction):
+    if interaction.user.id == 743831396874846229:
+        return None
+    return app_commands.Cooldown(rate=2,per=5)
+
 
 
 #* MangaCog class for manga management commands
@@ -711,6 +716,7 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
     content_rating="Content rating filter (default: Safe and Suggestive)",
     limit="Number of results to return per request (default: 15)",
     sort="Result sorting method (currently not functional)")
+    @app_commands.checks.dynamic_cooldown(cooldown_for_everyone_but_me)
     async def search(
                 self,
                 interaction: discord.Interaction,
@@ -760,6 +766,7 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
     #* Slash command to add a manga to user's list
     @app_commands.command(name="add", description="Add a manga to your list")
     @app_commands.describe(link="Paste the manga comick.io URL you want to add")
+    @app_commands.checks.dynamic_cooldown(cooldown_for_everyone_but_me)
     async def add(self, interaction: discord.Interaction, link: str):
         link = link.lower()
         await self.add_comick(interaction,link)
@@ -767,12 +774,14 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
     #* Slash command to show user's manga list
     @app_commands.command(name="list", description="Show your Manga list")
     @app_commands.describe(mode="Choose how you want the list to be displayed")
+    @app_commands.checks.dynamic_cooldown(cooldown_for_everyone_but_me)
     async def list_manga(self, interaction: discord.Interaction,mode: Literal["Compact", "Detailed"]):
         await self.list_comick(interaction,mode)
 
     #* Slash command to remove manga from user's list
     @app_commands.command(name="remove", description="Remove a manga from your list")
     @app_commands.describe(mode="Choose whether to remove selected manga or all")
+    @app_commands.checks.dynamic_cooldown(cooldown_for_everyone_but_me)
     async def remove_manga(
         self,
         interaction: discord.Interaction,
@@ -1090,7 +1099,28 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
             await asyncio.sleep(86400)
 
 
+    """
+                                        ///     APP COMMAND ERROR HANDLER      ///
+    """ 
+    @search.error
+    async def on_search_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        if isinstance(error,app_commands.CommandOnCooldown):
+            await interaction.response.send_message(content=f"{error}",ephemeral=True)
 
+    @list_manga.error
+    async def on_list_manga_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        if isinstance(error,app_commands.CommandOnCooldown):
+            await interaction.response.send_message(content=f"{error}",ephemeral=True)
+
+    @add.error
+    async def on_add_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        if isinstance(error,app_commands.CommandOnCooldown):
+            await interaction.response.send_message(content=f"{error}",ephemeral=True)
+
+    @remove_manga.error
+    async def on_remove_manga_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        if isinstance(error,app_commands.CommandOnCooldown):
+            await interaction.response.send_message(content=f"{error}",ephemeral=True)
 
 
 #* Setup function to add MangaCog to the bot
