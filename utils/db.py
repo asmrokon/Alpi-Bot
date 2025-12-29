@@ -226,12 +226,47 @@ async def write_info_comick(dc_id,manga):
         #* writes in mangas table        
         await db.execute(
 """
-insert or ignore into mangas
-(slug,hid,title,authors,artists,latest_chapter,cover_url,description)
-values (?,?,?,?,?,?,?,?)
-on conflict(slug) do update set
-    cover_url = excluded.cover_url
-""",(manga["slug"],manga["hid"],manga["title"],manga["authors"],manga["artists"],manga["latest_chapter"],manga["cover_url"],manga["description"]))
+INSERT INTO mangas (
+    slug,
+    hid,
+    title,
+    source,
+    authors,
+    artists,
+    latest_chapter,
+    cover_url,
+    description,
+    status,
+    bayesian_rating,
+    follow_rank,
+    content_rating,
+    demographic,
+    start_year
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(slug) DO UPDATE SET
+    latest_chapter   = excluded.latest_chapter,
+    cover_url        = excluded.cover_url,
+    status           = excluded.status,
+    bayesian_rating  = excluded.bayesian_rating,
+    follow_rank      = excluded.follow_rank,
+""",(
+    manga["slug"],
+    manga["hid"],
+    manga["title"],
+    manga["source"],
+    manga["authors"],
+    manga["artists"],
+    manga["latest_chapter"],
+    manga["cover_url"],
+    manga["description"],
+    manga["status"],
+    manga["bayesian_rating"],
+    manga["follow_rank"],
+    manga["content_rating"],
+    manga["demographic"],
+    manga["start_year"],
+))
         await db.commit()
              
         #* writes in user_manga table
