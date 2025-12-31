@@ -13,8 +13,7 @@ async def get_manga_info_from_comick(slug):
     url = f"https://api.comick.dev/comic/{slug}"
     try:
         data = await get_comick_data(url)
-        print(json.dumps(data,indent=4))
-        # return True, data
+        return True, data
     except Exception as e:
         return False, e
 
