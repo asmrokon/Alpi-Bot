@@ -17,9 +17,10 @@ async def create_task_for_check_feed(source):
         tasks = []
         for manga in manga_list:
             if manga:
-                task = create_task(check_comick_feed(manga))
-                tasks.append(task)
-                await sleep(1)
+                if int(manga["status"]) == 1:
+                    task = create_task(check_comick_feed(manga))
+                    tasks.append(task)
+                    await sleep(1)
         
         results = await gather(*tasks)
         return results
