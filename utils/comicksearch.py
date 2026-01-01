@@ -36,13 +36,13 @@ def extract_manga_info(raw_manga_data_list):
     manga_list = []
     for manga_data in raw_manga_data_list:
         try:
-            hid = manga_data.get("hid","")
-            slug = manga_data.get("slug","")
-            title = manga_data.get("title","")
-            description = manga_data.get("desc","")
-            status = manga_data.get("status","")
-            rating = manga_data.get("bayesian_rating","0")
-            latest_chapter = manga_data.get("last_chapter","")
+            hid = manga_data.get("hid","None") or "None"
+            slug = manga_data.get("slug","None") or "None"
+            title = manga_data.get("title","None") or "None"
+            description = manga_data.get("desc","None") or "None"
+            status = manga_data.get("status",5) or 5
+            rating = manga_data.get("bayesian_rating",0) or 0
+            latest_chapter = manga_data.get("last_chapter",0) or 0
             cover_filename_list = manga_data.get("md_covers",[])            
             cover_filename = "x7gMkp.jpg"
 
@@ -53,7 +53,7 @@ def extract_manga_info(raw_manga_data_list):
 
             short_desc = ""
             if description:
-                short_desc = f"{description[:350]}..." if len(description) > 350 else description
+                short_desc = f"{description[:1000]}..." if len(description) > 1000 else description
 
             manga_list.append({
                 "title": title,

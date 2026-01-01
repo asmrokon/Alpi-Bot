@@ -13,7 +13,11 @@ async def get_manga_info_from_comick(slug):
     url = f"https://api.comick.dev/comic/{slug}"
     try:
         data = await get_comick_data(url)
-        return True, data
+        if data:
+            # print(json.dumps(data,indent=4))
+            return True, data
+        else:
+            return False, "e"
     except Exception as e:
         return False, e
 
@@ -45,14 +49,14 @@ async def fetch_comick(url):
                     return data
                 else:
                     text = await rsp.text()
-                    raise Exception(f"Failed: {rsp.status}\n{text[:200]}")
+                    raise Exception(f"Failed: {rsp.status}\n{text[:200]}\nURL: {url}")
                     return {}    
     except ValueError:
-        print("Invalid JSON in response.")
-        return None
+        print(f"Invalid JSON in response.\n URL: {url}")
+        return {}
     except Exception as e:
-        print(f"Unexpected error: {e}")
-        return None
+        print(f"Unexpected error: {e}\nURL: {url}")
+        return {}
 
 
 def extract_manga_info(manga_data):
@@ -61,7 +65,7 @@ def extract_manga_info(manga_data):
         if comic:
             slug = comic.get("slug","None") or "None"
             hid = comic.get("hid","None") or "None"
-            title = comic.get("title","None") or "None"
+            title = comic.get("title","None") or "None" 
             status = comic.get("status",5) or 5
             bayesian_rating = comic.get("bayesian_rating",0) or 0
             follow_rank = comic.get("follow_rank") or 1000000000
@@ -72,24 +76,26 @@ def extract_manga_info(manga_data):
 
             # Get authors and artists name
             authors_list = []
-            for author in manga_data.get("authors",[]):
+            authors_raw = manga_data.get("authors",[{"name": "Not mentioned"}]) or [{"name": "Not mentioned"}]
+            for author in authors_raw:
                 authors_list.append(author["name"])
             authors = ", ".join(authors_list)
 
             artists_list = []
-            for artist in manga_data.get("artists",[]):
+            artists_raw = manga_data.get("artists",[{"name": "Not mentioned"}]) or [{"name": "Not mentioned"}]
+            for artist in artists_raw: 
                 artists_list.append(artist["name"])
             artists = ", ".join(artists_list)
 
             # Get description
-            description = comic.get("desc","")
+            description = comic.get("desc","None") or "None"
 
             cover_url = "https://meo.comick.pictures/0Z5a4g.jpg"
             if cover_filename_list:            
                 cover_filename = cover_filename_list[0].get("b2key","")                
                 cover_url = f"https://meo.comick.pictures/{cover_filename}"
 
-            latest_chapter = comic.get("last_chapter")
+            latest_chapter = comic.get("last_chapter") or 0
 
             return {
                 "title": title,
@@ -112,5 +118,5 @@ def extract_manga_info(manga_data):
             return {}
     except Exception as e:
         print(f"Error extracting manga info: {e}")
-        return None
+        return {}
     
