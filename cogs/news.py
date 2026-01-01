@@ -437,15 +437,15 @@ class SingleNewsView(ui.LayoutView):
         next_button = Button(emoji="<:rightarrow:1453438615362338847>", style=ButtonStyle.secondary)
         next_button.callback = self.next_news
 
-        footer_button = Button(label=f"{self.cur_page}/{len(self.news_list)}",style=ButtonStyle.secondary,disabled=True)
+        footer_button = Button(label=f"Page {self.cur_page} of {len(self.news_list)}",style=ButtonStyle.secondary,disabled=True)
         
         navigate_row = ui.ActionRow()
-        navigate_select = ui.Select(placeholder="Navigate to...",)
+        navigate_select = ui.Select(placeholder="Jump to page",)
         
         for idx, news in enumerate(self.news_list,start=1):
             navigate_select.append_option(discord.SelectOption(label=f"Page {idx}",value=str(idx),description=news["title"][:99]))
                                 
-        navigate_select.callback = self.navigate_to
+        navigate_select.callback = self.go_to_page
 
 
         container.add_item(source_name)
@@ -463,7 +463,7 @@ class SingleNewsView(ui.LayoutView):
         self.add_item(buttons_row)
         self.add_item(navigate_row)
 
-    async def navigate_to(self,interaction: discord.Interaction):
+    async def go_to_page(self,interaction: discord.Interaction):
         page_num = int(interaction.data["values"][0])
         self.cur_page = page_num
 
@@ -471,10 +471,10 @@ class SingleNewsView(ui.LayoutView):
         await interaction.response.edit_message(view=self)
 
     #* Go to previous news in the list
-    async def previous_news(self, interaction):
+    async def previous_news(self, interaction: discord.Interaction):
         if interaction.user.id != self.dc_id:
             await interaction.response.send_message(
-                "Scratch! This button is not yours to play with!", ephemeral=True
+                "This button belongs to someone else. Please use your own.", ephemeral=True, delete_after=20
             )
             return
         total_page = len(self.news_list)
@@ -491,10 +491,10 @@ class SingleNewsView(ui.LayoutView):
             await interaction.response.edit_message(view=self)
 
     #* Go to next news in the list
-    async def next_news(self, interaction):
+    async def next_news(self, interaction: discord.Interaction):
         if interaction.user.id != self.dc_id:
             await interaction.response.send_message(
-                "Scratch! This button is not yours to play with!", ephemeral=True
+                "This button belongs to someone else. Please use your own.", ephemeral=True, delete_after=20
             )
             return
         total_page = len(self.news_list)
