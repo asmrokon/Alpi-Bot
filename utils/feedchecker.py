@@ -44,6 +44,8 @@ async def check_comick_feed(manga):
 
 
 async def has_new_chapter(manga):
+    if not manga:
+        return {}
     stored_manga_list = await get_all_manga_list_from_db_with_same_slugs([manga["slug"]])
     
     for stored_manga in stored_manga_list:

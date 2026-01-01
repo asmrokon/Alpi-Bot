@@ -245,11 +245,10 @@ INSERT INTO mangas (
 )
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(slug) DO UPDATE SET
-    latest_chapter   = excluded.latest_chapter,
     cover_url        = excluded.cover_url,
     status           = excluded.status,
     bayesian_rating  = excluded.bayesian_rating,
-    follow_rank      = excluded.follow_rank,
+    follow_rank      = excluded.follow_rank
 """,(
     manga["slug"],
     manga["hid"],
