@@ -69,7 +69,7 @@ class NewsCog(commands.Cog):
                     
                     await interaction.followup.send(view=layout_view)
             else:
-                await interaction.followup.send(content="Nyaa... something went wrong fetching the news. Try again later!")            
+                await interaction.followup.send(content="Something went wrong fetching the news. Try again later!")            
 
 
         elif src == "myanimelist news":
@@ -92,7 +92,7 @@ class NewsCog(commands.Cog):
                     
                     await interaction.followup.send(view=layout_view)
             else:
-                await interaction.followup.send(content="Nyaa... something went wrong fetching the news. Try again later!")            
+                await interaction.followup.send(content="Something went wrong fetching the news. Try again later!")            
 
 
     @app_commands.command(name="subscribe",description="Subscribe to Anime News updates")
@@ -114,7 +114,7 @@ class NewsCog(commands.Cog):
                 num=1
                 )
         await interaction.response.send_message(
-            content=f"Successfully subscribed to **{source}**\nFrom now on you will recieve news on DM.\n-# To unsubscribe do `/unsubscribe [source]`",
+            content=f"You have successfully subscribed to **{source}**.\nYou will now receive updates via direct messages.\n-# To unsubscribe, use `/unsubscribe {source}`",
             ephemeral=True
             )
 
@@ -138,7 +138,7 @@ class NewsCog(commands.Cog):
                 num=0
                 )
         await interaction.response.send_message(
-            content=f"Successfully unsubscribed to **{source}**\n-# To subscribe again do `/subscribe [source]`",
+            content=f"You have successfully unsubscribed from **{source}**.\n-# To subscribe again, use `/subscribe {source}`",
             ephemeral=True
             )
 
