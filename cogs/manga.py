@@ -717,7 +717,7 @@ class SingleMangaView(ui.LayoutView):
         if len(self.manga_dicts) <= 25: 
             navigate_row = ui.ActionRow()        
             navigate_select = ui.Select(placeholder=f"{manga_dict['title']}")
-            for idx, manga in enumerate(self.manga_dicts[:25],start=1):            
+            for idx, manga in enumerate(self.manga_dicts[:25],start=0):            
                 if idx == self.cur_page:
                     navigate_select.append_option(discord.SelectOption(label=f"{manga["title"][:99]}",value=str(idx),emoji=rightarrow_emoji))
                 else:
@@ -753,7 +753,7 @@ class SingleMangaView(ui.LayoutView):
 
     async def go_to_page(self,interaction: discord.Interaction):
         page_num = int(interaction.data["values"][0])
-        self.cur_page = page_num - 1
+        self.cur_page = page_num
 
         await self.render_page()
         await interaction.response.edit_message(view=self)
@@ -1160,8 +1160,9 @@ class SearchResultView(ui.LayoutView):
             section_buttons_row.add_item(web_view_button)
             container.add_item(section_buttons_row)
 
-            if idx != (self.limit_per_page - 1):
-                container.add_item(ui.Separator(visible=True,spacing=discord.SeparatorSpacing.small))  
+            if idx != (len(self.manga_dicts[start_index:last_index])- 1):
+                container.add_item(ui.Separator(visible=True,spacing=discord.SeparatorSpacing.small)) 
+
 
             
         buttons_row = ui.ActionRow()
