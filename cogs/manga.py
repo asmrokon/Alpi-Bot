@@ -20,6 +20,8 @@ from utils.db import (
     get_cover_url_using_slug,
     is_duplicate,
     remove_manga_from_comick,
+    get_manga_limit_of_a_user,
+    update_manga_limit_of_a_user,
 )
 from utils.feedchecker import get_new_chapters_info, has_new_chapter
 from utils.comicksearch import get_comick_search_result
@@ -292,15 +294,20 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
 
     #* comick manga add function
     async def add_comick(self,interaction: discord.Interaction,link):
+        all_manga = await get_manga_list_of_a_user_from_comick(interaction.user.id)
+        limit = await get_manga_limit_of_a_user(interaction.user.id)
         
         #* checks if the given link is valid or not.
-        await interaction.response.send_message(embed=embed_messages["adding"])
+        await interaction.response.send_message(embed=embed_messages["adding"],delete_after=120)
         status, slug = await check_link_and_get_comick_slug(link)
         msg = await interaction.original_response()
 
         if status == 200:            
             #* checks if it is already in the list or not and then add it if not in list
             if not await is_duplicate("comick",interaction.user.id, slug):    
+                if all_manga and limit and len(all_manga) >= limit:
+                    await msg.edit(content=f"Current limit: **{limit}**",embed=embed_messages["max_manga_limit"])
+                    return
                 #* gets manga info in dict  
                 success, manga = await get_manga_info_from_comick(slug)
                 if success and isinstance(manga,dict):
@@ -358,7 +365,7 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
         manga_dicts = await get_manga_list_of_a_user_from_comick(dc_id)
         if manga_dicts == []:
             await interaction.response.send_message(
-                embed=embed_messages["no_manga_to_show"]
+                embed=embed_messages["no_manga_to_show"],delete_after=120
             )
             return
 
@@ -1221,8 +1228,15 @@ class SearchResultView(ui.LayoutView):
 
         #* checks if it is already in the list or not and then add it if not in list
         followup = await interaction.followup.send(content=f"**{title}**",embed=embed_messages["adding"],wait=True,ephemeral=True)
-        await followup.delete(delay=20)
+        await followup.delete(delay=30)
+        
+
         if not await is_duplicate("comick",interaction.user.id, slug):    
+            all_manga = await get_manga_list_of_a_user_from_comick(interaction.user.id)
+            limit = await get_manga_limit_of_a_user(interaction.user.id)
+            if all_manga and limit and len(all_manga) >= limit:
+                await followup.edit(content=f"Current limit: **{limit}**",embed=embed_messages["max_manga_limit"])
+                return
             success, manga = await get_manga_info_from_comick(slug)                
             if success and isinstance(manga,dict):                 
                 await write_info_comick(dc_id=interaction.user.id, manga=manga)

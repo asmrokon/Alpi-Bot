@@ -190,7 +190,22 @@ async def get_title_from_slug(slug):
             else:
                 return "No Title"
 
+async def get_manga_limit_of_a_user(dc_id: int):
+    db_path = get_db_path("comick")
+    async with connect(db_path) as db:
+        async with db.execute("select manga_limit from users where dc_id = ?",(dc_id,)) as cursor:
+            row = await cursor.fetchone()
+            if row: 
+                return row[0]
+            else:
+                return 55
 
+
+async def update_manga_limit_of_a_user(dc_id: int,limit: int):
+    db_path = get_db_path("comick")
+    async with connect(db_path) as db:
+        await db.execute("update users set manga_limit = ? where dc_id = ?",(limit,dc_id))
+        await db.commit()
 
 
 #* Return the cover URL for a slug, or a fallback default image if missing.
@@ -280,8 +295,8 @@ values (?,?)""",(dc_id,manga["slug"]))
         await db.execute(
 """
 insert or ignore into users
-(dc_id)
-values (?)""",(dc_id,))
+(dc_id,manga_limit)
+values (?,?)""",(dc_id,55))
         await db.commit()
 
 
