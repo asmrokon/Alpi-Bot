@@ -1,4 +1,4 @@
-from asyncio import sleep, create_task, gather
+from asyncio import sleep
 
 #* Import functions to get latest chapters and manage manga/user data
 from .db import get_all_manga_list_from_db, update_latest_chapter_comick, get_dc_ids_using_slug, get_all_manga_list_from_db_with_same_slugs
@@ -14,16 +14,16 @@ async def create_task_for_check_feed(source):
         manga_list = await get_all_manga_list_from_db("comick")
         if not manga_list:
             return
-        tasks = []
+        ids_n_slugs_list = []
         for manga in manga_list:
             if manga:
-                if int(manga["status"]) == 1:
-                    task = create_task(check_comick_feed(manga))
-                    tasks.append(task)
+                if int(manga["status"]) in [1,4]:
+                    id_n_slug = await check_comick_feed(manga)
+                    if id_n_slug:
+                        ids_n_slugs_list.append(id_n_slug)
                     await sleep(1)
-        
-        results = await gather(*tasks)
-        return results
+                
+        return ids_n_slugs_list
 
 
 
@@ -37,7 +37,9 @@ async def check_comick_feed(manga):
             to_notify_users_ids = await get_dc_ids_using_slug(manga["slug"]) 
             return {"slug": manga["slug"],"dc_ids": to_notify_users_ids,"latest_chapter":latest_chapter}
         else:
-            return None
+            return {}
+    else:
+        return {}
 
 
 
