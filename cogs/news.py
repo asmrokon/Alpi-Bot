@@ -471,6 +471,11 @@ class SingleNewsView(ui.LayoutView):
         self.add_item(navigate_row)
 
     async def go_to_page(self,interaction: discord.Interaction):
+        if interaction.user.id != self.dc_id:
+            await interaction.response.send_message(
+                "This button belongs to someone else. Please use your own.", ephemeral=True, delete_after=20
+            )
+            return        
         page_num = int(interaction.data["values"][0])
         self.cur_page = page_num
 
