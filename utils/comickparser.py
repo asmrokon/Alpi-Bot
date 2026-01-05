@@ -66,11 +66,11 @@ def extract_manga_info(manga_data):
             slug = comic.get("slug","None") or "None"
             hid = comic.get("hid","None") or "None"
             title = comic.get("title","None") or "None" 
-            status = comic.get("status",5) or 5
+            status = comic.get("status",0) or 0
             bayesian_rating = comic.get("bayesian_rating",0) or 0
             follow_rank = comic.get("follow_rank") or 1000000000
             content_rating = comic.get("content_rating","None") or "None"
-            demographic = comic.get("demographic",5) or 5
+            demographic = comic.get("demographic",0) or 0
             start_year = comic.get("year",1200) or 1200
             cover_filename_list = comic.get("md_covers",[])
 
@@ -120,3 +120,102 @@ def extract_manga_info(manga_data):
         print(f"Error extracting manga info: {e}")
         return {}
     
+
+
+
+
+async def get_trending_manga_from_comick(params: dict,chosen_day=0):    
+    try:
+        data = await get_trending_data(params,chosen_day)
+        if data:
+            return True, data
+        else:
+            return False, "e"
+    except Exception as e:
+        return False, e
+
+
+async def get_trending_data(params: dict,chosen_day=0):
+    data = await fetch_trending_comick(params)
+    if data:
+        if "day" in list(params.keys()):
+            manga_dict = extract_trending_manga_info(data,chosen_day)
+        else:
+            data = data["trending"]
+            manga_dict = extract_trending_manga_info(data)
+        return manga_dict if manga_dict else {}
+    else:
+        return {}
+
+
+
+def extract_trending_manga_info(manga_data,chosen_day=0):
+    chosen_day = str(chosen_day)    
+    manga_infos = {
+        "7": [],
+        "30": [],
+        "90": [],        
+    }
+    base_days = ["7","30","90"]
+    if chosen_day != "0" and (chosen_day not in base_days):
+        manga_infos[chosen_day] = []
+        base_days.append(chosen_day)
+
+    for day in base_days:        
+        raw_manga_list = manga_data.get(day, [])       
+        if raw_manga_list:
+            for manga in raw_manga_list[:21]:
+                try:
+                    if manga:
+                        slug = manga.get("slug","None") or "None"
+                        title = manga.get("title","None") or "None" 
+                        content_rating = manga.get("content_rating","None") or "None"
+                        demographic = manga.get("demographic",0) or 0
+                        cover_filename_list = manga.get("md_covers",[])
+
+                        cover_url = "https://meo.comick.pictures/0Z5a4g.jpg"
+                        if cover_filename_list:            
+                            cover_filename = cover_filename_list[0].get("b2key","")                
+                            cover_url = f"https://meo.comick.pictures/{cover_filename}"
+                        
+                        manga_infos[day].append({
+                            "title": title,
+                            "slug": slug,
+                            "cover_url": cover_url,
+                            "content_rating": content_rating,
+                            "demographic": demographic,
+                        })     
+                except Exception as e:
+                    print(f"Error extracting manga info: {e}")
+    
+    return manga_infos
+
+
+
+async def fetch_trending_comick(params: dict):
+    url = "https://api.comick.dev/top"
+    try:
+        async with ClientSession(headers=headers) as session:
+            async with session.get(url,params=params) as rsp:
+                if rsp.status == 200:
+                    data = await rsp.json()
+                    return data
+                else:
+                    text = await rsp.text()
+                    raise Exception(f"Failed: {rsp.status}\n{text[:200]}\nURL: {url}")
+                    return {}    
+    except ValueError:
+        print(f"Invalid JSON in response.\n URL: {url}")
+        return {}
+    except Exception as e:
+        print(f"Unexpected error: {e}\nURL: {url}")
+        return {}
+
+
+params = {
+    "type":"trending",
+    "accept_mature_content": "true",
+    "content_types":"manga",
+    "gender": 2,    
+    "day":720
+}
