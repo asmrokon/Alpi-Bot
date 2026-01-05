@@ -129,6 +129,16 @@ async def get_manga_list_of_a_user_from_comick(dc_id):
     return manga_dicts
 
 
+async def get_manga_from_db(slug):
+    manga_dict = {}
+    db_path = get_db_path("comick")
+    async with connect(db_path) as db:
+        db.row_factory = Row
+        async with db.execute("select * from mangas where slug = ?",(slug,)) as cursor:            
+            async for row in cursor:
+                manga_dict = dict(row) #* type: ignore
+    return manga_dict
+
 
 #* Retrieve all manga records from the given source database as a list of dicts.
 async def get_all_manga_list_from_db(source):
