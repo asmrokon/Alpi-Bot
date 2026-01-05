@@ -37,6 +37,7 @@ async def load_cogs():
     await bot.load_extension("cogs.manga")
     await bot.load_extension("cogs.news")
     await bot.load_extension("cogs.admin")
+    await bot.load_extension("cogs.event")
 
 @bot.event
 async def on_ready():
