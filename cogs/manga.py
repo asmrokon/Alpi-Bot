@@ -420,7 +420,7 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
         if mode == "Compact":
             name = interaction.user.display_name
 
-            layout_view = CompactMangaView(limit=5,manga_dicts=manga_dicts,dc_id=dc_id,name=name,source="comick")
+            layout_view = CompactMangaView(limit=3,manga_dicts=manga_dicts,dc_id=dc_id,name=name,source="comick")
 
             await layout_view.render_page()
           
@@ -766,14 +766,11 @@ class TrendingView(ui.LayoutView):
 
             detail_button = Button(label="Details",emoji=info_emoji,style=ButtonStyle.secondary,custom_id=custom_id_2) 
             detail_button.callback = self.detail_manga
-            
-            slug_for_link = quote(manga["slug"],safe="")            
-            web_view_button = Button(label="Open on web",style=ButtonStyle.url,url=f"https://comick.dev/comic/{slug_for_link}")
+                        
             section_buttons_row = ui.ActionRow()
 
             section_buttons_row.add_item(add_button)
             section_buttons_row.add_item(detail_button)
-            section_buttons_row.add_item(web_view_button)
             container.add_item(section_buttons_row)
 
             if idx != (len(self.manga_dicts[start_index:last_index])- 1):
@@ -847,7 +844,7 @@ class TrendingView(ui.LayoutView):
         detail_view = SingleMangaView(manga_dicts=[manga],dc_id=interaction.user.id,source="comick",is_user_list=False)
         await detail_view.render_page()
         await followup_1.edit(content=None,view=detail_view)
-        # await interaction.followup.send(view=detail_view,ephemeral=True)    
+         
 
     async def days_navigate(self,interaction: discord.Interaction):        
         if interaction.user.id != self.dc_id:
@@ -976,6 +973,7 @@ class TrendingView(ui.LayoutView):
             await self.render_page()
             await interaction.response.edit_message(view=self)
 
+ 
     #* Go to previous manga page
     async def previous_page(self, interaction: discord.Interaction):
         if interaction.user.id != self.dc_id:
@@ -1200,7 +1198,17 @@ class CompactMangaView(ui.LayoutView):
                 ui.TextDisplay(f"### {manga['title']}\n**Author**: {manga["authors"]}\n**Last Ch**:  {manga["latest_chapter"]}   {chapter_emoji}\n**Status**: {status_conv_with_emoji[int(manga["status"])]}"),
                 accessory=ui.Thumbnail(manga["cover_url"])
             )
+            section_buttons_row = ui.ActionRow()
+
+            custom_id_2 = f"{self.cur_page * self.limit_per_page + idx}.{len(self.manga_dicts[start_index:last_index])}"
+
+            detail_button = Button(label="Details",emoji=info_emoji,style=ButtonStyle.secondary,custom_id=custom_id_2) 
+            detail_button.callback = self.detail_manga
+
+            section_buttons_row.add_item(detail_button)
+
             container.add_item(section)
+            container.add_item(section_buttons_row)
 
             if idx != (len(self.manga_dicts[start_index:last_index]) - 1):
                 container.add_item(ui.Separator(visible=True,spacing=discord.SeparatorSpacing.small))                        
@@ -1239,6 +1247,29 @@ class CompactMangaView(ui.LayoutView):
         if 25 >= self.total_page > 2:    
             self.add_item(navigate_row)
     
+
+    async def detail_manga(self,interaction: discord.Interaction):
+        await interaction.response.defer()
+        if interaction.user.id != self.dc_id:
+            await interaction.followup.send(
+                "This button belongs to someone else. Please use your own.", ephemeral=True
+            )
+            return
+        custom_id, total_manga = str(interaction.data['custom_id']).split(".")
+        custom_id = int(custom_id)
+
+        slug = self.manga_dicts[custom_id]["slug"] 
+        title = self.manga_dicts[custom_id]["title"]
+
+        followup_1 = await interaction.followup.send(content=f"Fetching **{title}**'s information...",wait=True,ephemeral=True)
+        
+        manga = await get_manga_from_db(slug)
+        if not manga:
+            success, manga = await get_manga_info_from_comick(slug)
+        detail_view = SingleMangaView(manga_dicts=[manga],dc_id=interaction.user.id,source="comick",is_user_list=False)
+        await detail_view.render_page()
+        await followup_1.edit(content=None,view=detail_view)
+
 
     async def send_page_modal(self,interaction: discord.Interaction):        
         if interaction.user.id != self.dc_id:
@@ -1501,19 +1532,20 @@ class SearchResultView(ui.LayoutView):
                 ui.TextDisplay(f"### {manga['title']}\n{chapter_emoji} Ch. {manga["latest_chapter"]}   **•**   {status_conv_with_emoji[int(manga["status"])]}   **•**   {star_emoji} {manga["rating"]}\n{short_desc}"),
                 accessory=ui.Thumbnail(manga["cover_url"])
             )
-            container.add_item(section)
+            section_buttons_row = ui.ActionRow()
             
             custom_id = f"{self.cur_page * self.limit_per_page + idx}_{len(self.manga_dicts[start_index:last_index])}"
+            custom_id_2 = f"{self.cur_page * self.limit_per_page + idx}.{len(self.manga_dicts[start_index:last_index])}"
+
+            detail_button = Button(label="Details",emoji=info_emoji,style=ButtonStyle.secondary,custom_id=custom_id_2) 
+            detail_button.callback = self.detail_manga
 
             add_button = Button(label="Add",emoji=bookmark_emoji,style=ButtonStyle.gray,custom_id=custom_id)
             add_button.callback = self.add_manga
-            slug_for_link = quote(manga["slug"],safe="")
-            web_view_button = Button(label="Open on web",style=ButtonStyle.url,url=f"https://comick.dev/comic/{slug_for_link}")
             
-            section_buttons_row = ui.ActionRow()
-
             section_buttons_row.add_item(add_button)
-            section_buttons_row.add_item(web_view_button)
+            section_buttons_row.add_item(detail_button)
+            container.add_item(section)
             container.add_item(section_buttons_row)
 
             if idx != (len(self.manga_dicts[start_index:last_index])- 1):
@@ -1550,6 +1582,31 @@ class SearchResultView(ui.LayoutView):
         self.add_item(container)
         self.add_item(buttons_row)
         self.add_item(navigate_row)
+
+
+
+    async def detail_manga(self,interaction: discord.Interaction):
+        await interaction.response.defer()
+        if interaction.user.id != self.dc_id:
+            await interaction.followup.send(
+                "This button belongs to someone else. Please use your own.", ephemeral=True
+            )
+            return
+        custom_id, total_manga = str(interaction.data['custom_id']).split(".")
+        custom_id = int(custom_id)
+
+        slug = self.manga_dicts[custom_id]["slug"] 
+        title = self.manga_dicts[custom_id]["title"]
+
+        followup_1 = await interaction.followup.send(content=f"Fetching **{title}**'s information...",wait=True,ephemeral=True)
+        
+        manga = await get_manga_from_db(slug)
+        if not manga:
+            success, manga = await get_manga_info_from_comick(slug)
+        detail_view = SingleMangaView(manga_dicts=[manga],dc_id=interaction.user.id,source="comick",is_user_list=False)
+        await detail_view.render_page()
+        await followup_1.edit(content=None,view=detail_view)
+
 
 
     async def go_to_page(self,interaction: discord.Interaction):        
