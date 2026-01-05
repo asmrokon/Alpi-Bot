@@ -23,10 +23,10 @@ async def api_search_comick(params):
 async def get_comick_search_result(params):
     raw_json_list = await api_search_comick(params)
     if not raw_json_list:
-        return []
+        return {}
     manga_list = extract_manga_info(raw_json_list)
     if not manga_list:
-        return []
+        return {}
     
     return manga_list
 
@@ -42,6 +42,8 @@ def extract_manga_info(raw_manga_data_list):
             description = manga_data.get("desc","None") or "None"
             status = manga_data.get("status",5) or 5
             rating = manga_data.get("bayesian_rating",0) or 0
+            followers = manga_data.get("user_follow_count",0) or 0
+            year = manga_data.get("year",0) or 0
             latest_chapter = manga_data.get("last_chapter",0) or 0
             cover_filename_list = manga_data.get("md_covers",[])            
             cover_filename = "x7gMkp.jpg"
@@ -64,6 +66,8 @@ def extract_manga_info(raw_manga_data_list):
                 "description": short_desc,
                 "status": status,
                 "rating": rating,
+                "followers": followers,
+                "year": year,
             })
 
 
