@@ -12,6 +12,13 @@ from utils.crollparser import get_latest_croll_news_list, get_latest_croll_news_
 from utils.malnewsparser import get_latest_mal_news_list_from_source, get_latest_mal_news_list
 
 
+
+previous_emoji = "<:previous:1457434026435547352>"
+next_emoji = "<:next:1457434023344476160>"
+
+
+
+
 error_log_channel_id = int(getenv("error_log_channel_id"))
 def cooldown_for_everyone_but_me(interaction: discord.Interaction):
     if interaction.user.id == 743831396874846229:        
@@ -389,7 +396,7 @@ class NewsNotificationView(ui.LayoutView):
             self.add_item(container)
 
             action_row = ui.ActionRow()
-            link_button = Button(label="View on Web", style=ButtonStyle.link, url=self.news["news_url"])
+            link_button = Button(label="Open on web", style=ButtonStyle.link, url=self.news["news_url"])
             action_row.add_item(link_button)
             
             self.add_item(action_row)
@@ -428,13 +435,13 @@ class SingleNewsView(ui.LayoutView):
         thumbnail = ui.MediaGallery(discord.MediaGalleryItem(self.news_list[num]["image_url"]))
 
         buttons_row = ui.ActionRow()
-        link_button = Button(label="View on Web", style=ButtonStyle.link, url=self.news_list[num]["news_url"])
+        link_button = Button(label="Open on web", style=ButtonStyle.link, url=self.news_list[num]["news_url"])
         
-        previous_button = Button(emoji="<:leftarrow:1453438612774326304>", style=ButtonStyle.secondary)
+        previous_button = Button(emoji=previous_emoji, style=ButtonStyle.secondary)
         previous_button.callback = self.previous_news
         
 
-        next_button = Button(emoji="<:rightarrow:1453438615362338847>", style=ButtonStyle.secondary)
+        next_button = Button(emoji=next_emoji, style=ButtonStyle.secondary)
         next_button.callback = self.next_news
 
         footer_button = Button(label=f"Page {self.cur_page} of {len(self.news_list)}",style=ButtonStyle.secondary,disabled=True)
