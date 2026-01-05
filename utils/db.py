@@ -126,6 +126,7 @@ async def get_manga_list_of_a_user_from_comick(dc_id):
             async with db.execute("select * from mangas where slug = ?",(slug,)) as cursor:
                 row = await cursor.fetchone()
                 manga_dicts.append(dict(row)) #* type: ignore
+    manga_dicts.sort(key=lambda manga: manga["title"])
     return manga_dicts
 
 

@@ -323,7 +323,6 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
         manga_dicts = await get_manga_list_of_a_user_from_comick(interaction.user.id)
         if not manga_dicts:
             return []
-        manga_dicts.sort(key=lambda mng: mng["title"])        
         choice_list = []
         
         for manga in manga_dicts:
@@ -421,7 +420,7 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
         if mode == "Compact":
             name = interaction.user.display_name
 
-            layout_view = CompactMangaView(limit=3,manga_dicts=manga_dicts,dc_id=dc_id,name=name,source="comick")
+            layout_view = CompactMangaView(limit=5,manga_dicts=manga_dicts,dc_id=dc_id,name=name,source="comick")
 
             await layout_view.render_page()
           
@@ -1011,7 +1010,6 @@ class SingleMangaView(ui.LayoutView):
     #* Generate embed for current manga page
     async def render_page(self):
         num = self.cur_page
-        self.manga_dicts.sort(key=lambda manga: manga["bayesian_rating"],reverse=True)
         manga_dict = self.manga_dicts[num]
         demographic = demographic_conv_with_emoji[int(manga_dict["demographic"])]
         short_desc = f"{manga_dict["description"][:2000]}..." if len(manga_dict["description"]) > 2000 else manga_dict["description"]
@@ -1188,8 +1186,6 @@ class CompactMangaView(ui.LayoutView):
     #* Generate embed for current manga page
     async def render_page(self):
         self.clear_items()
-
-        self.manga_dicts.sort(key=lambda manga: manga["bayesian_rating"],reverse=True)
 
         start_index = self.limit_per_page * self.cur_page
         last_index = start_index + self.limit_per_page            
