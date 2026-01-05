@@ -161,7 +161,7 @@ def cooldown_for_everyone_but_me(interaction: discord.Interaction):
         return None
 
     if interaction.command.name == "search":
-        return app_commands.Cooldown(rate=2,per=15)
+        return app_commands.Cooldown(rate=2,per=10)
     else:
         return app_commands.Cooldown(rate=2,per=5)
 
@@ -187,11 +187,11 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
 
     @app_commands.command(name="search",description="Search Comick.io for manga with optional filters")
     @app_commands.describe(
-    title="Manga title or keywords to search on Comick.io",
-    status="Publication status filter (default: all statuses)",
-    demographic="Target demographic filter (default: all demographics)",
-    content_rating="Content rating filter (default: Safe and Suggestive)",
-    limit="Number of results to return per request (default: 15)")
+        title="Manga title or keywords to search on Comick.io",
+        status="Publication status filter (default: all statuses)",
+        demographic="Target demographic filter (default: all demographics)",
+        content_rating="Content rating filter (default: Safe and Suggestive)",
+        limit="Number of results to return per request (default: 15)")
     @app_commands.checks.dynamic_cooldown(cooldown_for_everyone_but_me)
     async def search(
                 self,
@@ -657,6 +657,11 @@ class MangaCog(commands.GroupCog, name="manga", description="Manga management"):
     """ 
     @search.error
     async def on_search_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        if isinstance(error,app_commands.CommandOnCooldown):
+            await interaction.response.send_message(content=f"{error}",ephemeral=True)
+
+    @trending.error
+    async def on_trending_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         if isinstance(error,app_commands.CommandOnCooldown):
             await interaction.response.send_message(content=f"{error}",ephemeral=True)
 
@@ -1782,7 +1787,7 @@ notification_templates = [
     "### 😎 Don't blink! Chapter **{ch_num}** of **{title}** just hit the shelves!",
     "### 🍿 Popcorn ready? **{title}** chapter **{ch_num}** is waiting for you.",
     "### 🔥 Something is new! **{title}**, chapter **{ch_num}**, is out!",
-    "### ✨ The saga continues… **{title}** chapter **{ch_num}** just dropped!",
+    "### ✨ The saga continues... **{title}** chapter **{ch_num}** just dropped!",
     "### ⚡ Your favorite manga **{title}** has a new chapter\n Chapter**{ch_num}** is live now!",
     "### Heads up! **{title}** just got a new chapter (**{ch_num}**).",
     "### Another one! Chapter **{ch_num}** of **{title}** is out now!",
