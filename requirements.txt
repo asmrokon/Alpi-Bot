@@ -1,4 +1,4 @@
 discord
 python-dotenv
 aiosqlite
-cloudscraper
+aiohttp

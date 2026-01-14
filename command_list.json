@@ -1,0 +1,70 @@
+{
+    "manga": {
+        "search": {
+            "name":"manga search",
+            "title": "Search manga",
+            "id": 1452382669492195390,
+            "desc": "Search Comick.io for manga with optional filters",
+            "args": "`title`  `status`  `demographic`  `content_rating`  `limit`",
+            "embed": "</manga search:1452382669492195390>"
+        },
+        "trending": {
+            "name":"manga trending",
+            "title": "Trending manga",
+            "id": 1452382669492195390,
+            "desc": "View the latest trending manga, manhwa or manhua for a selected time range",
+            "args": "`day`  `comic_types`  `mature_content`",
+            "embed": "</manga trending:1452382669492195390>"
+        },
+        "add": {
+            "name":"manga add",
+            "title": "Add to list",
+            "id": 1452382669492195390,
+            "desc": "Add a manga to your personal tracking list using its link",
+            "args": "`link`",
+            "embed": "</manga add:1452382669492195390>"
+        },
+        "list": {
+            "name":"manga list",
+            "title": "Your manga list",
+            "id": 1452382669492195390,
+            "desc": "View all manga you are currently tracking",
+            "args": "`mode`",
+            "embed": "</manga list:1452382669492195390>"
+        },
+        "remove": {
+            "name":"manga remove",
+            "title": "Remove from your list",
+            "id": 1452382669492195390,
+            "desc": "Remove a specific manga or clear your entire list",
+            "args": "`title`  OR  `mode`",
+            "embed": "</manga remove:1452382669492195390>"
+        }                                
+    },
+    "news": {
+        "news": {
+            "name": "news",
+            "title": "Anime news",
+            "id": 1452929787902431334,
+            "desc": "View the latest anime news from various sources",
+            "args": "`source`",
+            "embed": "</news:1452929787902431334>"
+        },
+        "subscribe": {
+            "name": "subscribe",
+            "title": "Enable news alert",
+            "id": 1451904715326619750,
+            "desc": "Subscribe to Anime News updates",
+            "args": "`source`",
+            "embed": "</subscribe:1451904715326619750>"
+        },
+        "unsubscribe": {
+            "name": "unsubscribe",
+            "title": "Disable news alert",
+            "id": 1452003538249978090,
+            "desc": "Unsubscribe from Anime News updates",
+            "args": "`source`",
+            "embed": "</unsubscribe:1452003538249978090>"
+        }
+    }
+}

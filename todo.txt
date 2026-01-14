@@ -1,0 +1,52 @@
+update custom emojies 
+add profile command
+separate layoutview classes into another folder
+add manga reading inside discord
+
+
+
+
+
+**Prefix Commands**
+- **`uml`**: Update a user's manga limit (admin-only; args: `dc_id`, `limit`).  
+- **`rc`**: Reload a cog/extension (arg: `cog`).  
+- **`lc`**: Load a cog/extension (arg: `cog`).  
+- **`uc`**: Unload a cog/extension (arg: `cog`).  
+- Source: admin.py
+
+**App/Slash Commands (manga)**
+- **`/manga search`**: Search Comick.io (args: `title`, optional `status`, `demographic`, `content_rating`, `limit`).  
+- **`/manga trending`**: View trending manga (args: `day`, `comic_types`, `mature_content`).  
+- **`/manga add`**: Add a manga to your list (arg: `link`).  
+- **`/manga list`**: Show your manga list (arg: `mode` — `Compact` or `Detailed`).  
+- **`/manga remove`**: Remove manga from your list (args: `title` with autocomplete OR `mode` — `Selection menu` / `Remove All`).  
+- Note: these are in the `manga` command group.  
+- Source: manga.py
+
+**App/Slash Commands (news)**
+- **`/news`**: View latest anime news (arg: `source` — `Crunchyroll News` or `MyAnimeList News`).  
+- **`/subscribe`**: Subscribe to news DMs (arg: `source`).  
+- **`/unsubscribe`**: Unsubscribe from news DMs (arg: `source`).  
+- Source: news.py
+
+Do you want this exported as:
+- A single plain-text message ready to paste to users, or
+- A `README.md` file added to the repo?
+
+
+| Command           | Description                 | Arguments                                                                             |
+| ----------------- | --------------------------- | ------------------------------------------------------------------------------------- |
+| `/manga search`   | Search Comick.io            | `title` *(required)*, `status`, `demographic`, `content_rating`, `limit` *(optional)* |
+| `/manga trending` | View trending manga         | `day`, `comic_types`, `mature_content`                                                |
+| `/manga add`      | Add a manga to your list    | `link`                                                                                |
+| `/manga list`     | Show your manga list        | `mode` — `Compact` or `Detailed`                                                      |
+| `/manga remove`   | Remove manga from your list | `title` (autocomplete) OR `mode` (Selection menu / Remove All)                        |
+
+
+
+| Command        | Description               | Arguments                                      |
+| -------------- | ------------------------- | ---------------------------------------------- |
+| `/news`        | View latest anime news    | `source` — Crunchyroll News / MyAnimeList News |
+| `/subscribe`   | Subscribe to news DMs     | `source`                                       |
+| `/unsubscribe` | Unsubscribe from news DMs | `source`                                       |
+
