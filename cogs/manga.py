@@ -1240,7 +1240,8 @@ class CompactMangaView(ui.LayoutView):
                     navigate_select.append_option(discord.SelectOption(label=f"Page {page_num + 1}",value=str(page_num)))
                                     
             navigate_select.callback = self.go_to_page
-
+            navigate_row.add_item(navigate_select)
+        
         buttons_row.add_item(previous_button)
         buttons_row.add_item(next_button)
         buttons_row.add_item(footer_button)
