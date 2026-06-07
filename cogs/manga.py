@@ -841,7 +841,7 @@ class TrendingView(ui.LayoutView):
         slug = self.manga_dicts[custom_id]["slug"] 
         title = self.manga_dicts[custom_id]["title"]
 
-        followup_1 = await interaction.followup.send(content=f"Fetching **{title}**'s information...",wait=True,ephemeral=True)
+        followup_1 = await interaction.followup.send(content=f"Fetching **{title}**'s information...",wait=True)
         
         manga = await get_manga_from_db(slug)
         if not manga:
@@ -1023,12 +1023,20 @@ class SingleMangaView(ui.LayoutView):
         title = ui.TextDisplay(f"# {manga_dict['title']}")
         title_separator = ui.Separator(visible=True,spacing=discord.SeparatorSpacing.small)
         text_section = ui.Section(accessory=ui.Thumbnail(manga_dict["cover_url"]))
-               
+
+        authors = manga_dict["authors"]
+        artists = manga_dict["artists"]
+        latest_ch = f"{manga_dict["latest_chapter"]}  {chapter_emoji}"
+        rating = f"{float(manga_dict['bayesian_rating']):.2f}".ljust(7)
+        start_year = str(manga_dict["start_year"]).ljust(7)
+        status = status_conv_with_emoji[int(manga_dict["status"])]
+        ratings = content_rating_conv[manga_dict["content_rating"]]
+
         infos_1 = ui.TextDisplay(
-        f"**Author**: {manga_dict["authors"]}   **•**   **Artist**: {manga_dict["artists"]}\n**Status**: {status_conv_with_emoji[int(manga_dict["status"])]}   **•**   **Latest Ch**: {manga_dict["latest_chapter"]}  {chapter_emoji}")
+        f"**Author**: {authors}   **•**   **Artist**: {artists}\n**Status**: {status}   **•**   **Latest Ch**: {latest_ch}")
 
         infos_2 = ui.TextDisplay(
-        f"**Rating**: {float(manga_dict["bayesian_rating"]):.2f}      **•**   **Demographic**: {demographic}\n**Started**: {manga_dict["start_year"]}   **•**   **Content**: {content_rating_conv[manga_dict["content_rating"]]}")
+        f"**Rating**: {rating}      **•**   **Demographic**: {demographic}\n**Started**: {start_year}   **•**   **Content**: {ratings}")
 
         desc_textdisplay = ui.TextDisplay(short_desc)
 
@@ -1244,8 +1252,7 @@ class CompactMangaView(ui.LayoutView):
         
         buttons_row.add_item(previous_button)
         buttons_row.add_item(next_button)
-        buttons_row.add_item(footer_button)
-        navigate_row.add_item(navigate_select)
+        buttons_row.add_item(footer_button)        
 
         self.add_item(container)
         if self.total_page > 1:
@@ -1256,7 +1263,7 @@ class CompactMangaView(ui.LayoutView):
 
     async def detail_manga(self,interaction: discord.Interaction):
         await interaction.response.defer()
-        if interaction.user.id != self.dc_id:
+        if interaction.user.id != self.dc_id: 
             await interaction.followup.send(
                 "This button belongs to someone else. Please use your own.", ephemeral=True
             )
@@ -1267,7 +1274,7 @@ class CompactMangaView(ui.LayoutView):
         slug = self.manga_dicts[custom_id]["slug"] 
         title = self.manga_dicts[custom_id]["title"]
 
-        followup_1 = await interaction.followup.send(content=f"Fetching **{title}**'s information...",wait=True,ephemeral=True)
+        followup_1 = await interaction.followup.send(content=f"Fetching **{title}**'s information...",wait=True)
         
         manga = await get_manga_from_db(slug)
         if not manga:
@@ -1604,7 +1611,7 @@ class SearchResultView(ui.LayoutView):
         slug = self.manga_dicts[custom_id]["slug"] 
         title = self.manga_dicts[custom_id]["title"]
 
-        followup_1 = await interaction.followup.send(content=f"Fetching **{title}**'s information...",wait=True,ephemeral=True)
+        followup_1 = await interaction.followup.send(content=f"Fetching **{title}**'s information...",wait=True)
         
         manga = await get_manga_from_db(slug)
         if not manga:
