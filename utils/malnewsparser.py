@@ -1,9 +1,10 @@
 import asyncio
 import json
-import aiohttp
-from html import unescape
 import xml.etree.ElementTree as ET
 from datetime import datetime
+from html import unescape
+
+import aiohttp
 
 rss_link = "https://myanimelist.net/rss/news.xml"
 

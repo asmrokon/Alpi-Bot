@@ -1,11 +1,11 @@
-from discord import app_commands, Interaction
-from discord import ui
-from typing import Literal
-import discord
 import json
-from discord.ext import commands
-from utils.emojis import Emojis
+from typing import Literal
 
+import discord
+from discord import Interaction, app_commands, ui
+from discord.ext import commands
+
+from utils.emojis import Emojis
 
 
 class EventCog(commands.Cog):

@@ -1,7 +1,6 @@
-from aiosqlite import connect, Row
 from pathlib import Path
 
-from asyncio import run
+from aiosqlite import Row, connect
 
 
 #* Return the Path object for the database file with the given filename (no extension).

@@ -1,8 +1,15 @@
 from asyncio import sleep
 
-#* Import functions to get latest chapters and manage manga/user data
-from .db import get_all_manga_list_from_db, update_latest_chapter_comick, get_dc_ids_using_slug, get_all_manga_list_from_db_with_same_slugs
 from .comickparser import get_latest_chapter_comick
+
+#* Import functions to get latest chapters and manage manga/user data
+from .db import (
+    get_all_manga_list_from_db,
+    get_all_manga_list_from_db_with_same_slugs,
+    get_dc_ids_using_slug,
+    update_latest_chapter_comick,
+)
+
 
 #* Entry point to get new chapters info for a given source
 async def get_new_chapters_info(source):

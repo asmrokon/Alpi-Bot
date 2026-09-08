@@ -1,11 +1,11 @@
+import asyncio
+import logging
+import sys
+from os import getenv
+
 import discord
 from discord.ext import commands
-import logging
 from dotenv import load_dotenv
-from os import getenv
-import asyncio
-import sys
-
 
 load_dotenv()
 

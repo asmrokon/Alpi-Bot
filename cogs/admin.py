@@ -1,6 +1,8 @@
-from discord.ext import commands
 from os import getenv
-from utils.db import update_manga_limit_of_a_user, get_manga_limit_of_a_user
+
+from discord.ext import commands
+
+from utils.db import get_manga_limit_of_a_user, update_manga_limit_of_a_user
 
 spooks_id = int(getenv("spooks_id"))
 

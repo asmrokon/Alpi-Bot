@@ -1,10 +1,10 @@
-from asyncio import sleep, create_task 
+from asyncio import create_task, sleep
 
+from .comickparser import get_manga_info_from_comick
 from .db import (
     get_all_manga_list_from_db,
     update_comick_cover_db,
 )
-from .comickparser import get_manga_info_from_comick
 
 
 # * Entry point to get new cover links

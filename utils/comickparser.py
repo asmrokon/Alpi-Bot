@@ -1,6 +1,4 @@
-from asyncio import run as async_run
 from aiohttp import ClientSession
-import json
 
 headers = {
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "

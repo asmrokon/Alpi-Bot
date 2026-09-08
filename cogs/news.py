@@ -1,17 +1,22 @@
-from discord.ext import commands  # noqa: I001
-from discord import ButtonStyle, ui
-import discord
-from discord.ui import Button
 import asyncio
-from discord import app_commands
-from typing import Literal
-from utils.db import update_subscribscription, get_subscribers_list
 from os import getenv
+from typing import Literal
 
-from utils.crollparser import get_latest_croll_news_list, get_latest_croll_news_list_from_source
-from utils.malnewsparser import get_latest_mal_news_list_from_source, get_latest_mal_news_list
+import discord
+from discord import ButtonStyle, app_commands, ui
+from discord.ext import commands
+from discord.ui import Button
+
+from utils.crollparser import (
+    get_latest_croll_news_list,
+    get_latest_croll_news_list_from_source,
+)
+from utils.db import get_subscribers_list, update_subscribscription
 from utils.emojis import Emojis
-
+from utils.malnewsparser import (
+    get_latest_mal_news_list,
+    get_latest_mal_news_list_from_source,
+)
 
 error_log_channel_id = int(getenv("error_log_channel_id"))
 spooks_id = int(getenv("spooks_id"))

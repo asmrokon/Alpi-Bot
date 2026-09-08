@@ -1,33 +1,34 @@
-from discord.ext import commands
-from discord import Embed, Color, ButtonStyle, app_commands
-from discord.ui import Button, View
-from discord import ui
-import discord
-from typing import Literal
-from os import getenv
 import asyncio
-import traceback
 import random
+import traceback
+from os import getenv
+from typing import Literal
 from urllib.parse import quote
 
+import discord
+from discord import ButtonStyle, Color, Embed, app_commands, ui
+from discord.ext import commands
+from discord.ui import Button, View
 
-from utils.small_funcs import check_link_and_get_comick_slug 
-from utils.comickparser import get_manga_info_from_comick, get_trending_manga_from_comick
+from utils.comickparser import (
+    get_manga_info_from_comick,
+    get_trending_manga_from_comick,
+)
+from utils.comicksearch import get_comick_search_result
 from utils.coverupdater import update_cover_url
 from utils.db import (
-    get_manga_list_of_a_user_from_comick,
-    write_info_comick,
-    get_title_from_slug,
     get_cover_url_using_slug,
+    get_manga_from_db,
+    get_manga_limit_of_a_user,
+    get_manga_list_of_a_user_from_comick,
+    get_title_from_slug,
     is_duplicate,
     remove_manga_from_comick,
-    get_manga_limit_of_a_user,
-    get_manga_from_db,
+    write_info_comick,
 )
-from utils.feedchecker import get_new_chapters_info, has_new_chapter
-from utils.comicksearch import get_comick_search_result
 from utils.emojis import Emojis
-
+from utils.feedchecker import get_new_chapters_info, has_new_chapter
+from utils.small_funcs import check_link_and_get_comick_slug
 
 #* channel ID
 error_log_channel_id = int(getenv("error_log_channel_id"))

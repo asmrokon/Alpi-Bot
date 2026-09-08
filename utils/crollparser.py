@@ -1,10 +1,10 @@
 import asyncio
 import json
-import aiohttp
-from html import unescape
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
+from html import unescape
 
+import aiohttp
 
 crunchyroll_rss_link = "https://cr-news-api-service.prd.crunchyrollsvc.com/v1/en-US/rss"
 
