@@ -31,6 +31,7 @@ from utils.comicksearch import get_comick_search_result
 
 #* channel ID
 error_log_channel_id = int(getenv("error_log_channel_id"))
+spooks_id = int(getenv("spooks_id"))
 
 # Emojies
 ongoing_emoji = "<:ongoing:1453695986311499890>"
@@ -157,7 +158,7 @@ embed_messages = {
 
 
 def cooldown_for_everyone_but_me(interaction: discord.Interaction):
-    if interaction.user.id == 743831396874846229:
+    if interaction.user.id == spooks_id:
         return None
 
     if interaction.command.name == "search":

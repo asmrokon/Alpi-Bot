@@ -17,11 +17,12 @@ previous_emoji = "<:previous:1457434026435547352>"
 next_emoji = "<:next:1457434023344476160>"
 
 
-
-
 error_log_channel_id = int(getenv("error_log_channel_id"))
+spooks_id = int(getenv("spooks_id"))
+
+
 def cooldown_for_everyone_but_me(interaction: discord.Interaction):
-    if interaction.user.id == 743831396874846229:        
+    if interaction.user.id == spooks_id:        
         return None
 
     if interaction.command.name == "news":
