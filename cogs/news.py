@@ -1,4 +1,4 @@
-from discord.ext import commands
+from discord.ext import commands  # noqa: I001
 from discord import ButtonStyle, ui
 import discord
 from discord.ui import Button
@@ -10,11 +10,7 @@ from os import getenv
 
 from utils.crollparser import get_latest_croll_news_list, get_latest_croll_news_list_from_source
 from utils.malnewsparser import get_latest_mal_news_list_from_source, get_latest_mal_news_list
-
-
-
-previous_emoji = "<:previous:1457434026435547352>"
-next_emoji = "<:next:1457434023344476160>"
+from utils.emojis import Emojis
 
 
 error_log_channel_id = int(getenv("error_log_channel_id"))
@@ -438,11 +434,11 @@ class SingleNewsView(ui.LayoutView):
         buttons_row = ui.ActionRow()
         link_button = Button(label="Open on web", style=ButtonStyle.link, url=self.news_list[num]["news_url"])
         
-        previous_button = Button(emoji=previous_emoji, style=ButtonStyle.secondary)
+        previous_button = Button(emoji=Emojis.previous, style=ButtonStyle.secondary)
         previous_button.callback = self.previous_news
         
 
-        next_button = Button(emoji=next_emoji, style=ButtonStyle.secondary)
+        next_button = Button(emoji=Emojis.next, style=ButtonStyle.secondary)
         next_button.callback = self.next_news
 
         footer_button = Button(label=f"Page {self.cur_page} of {len(self.news_list)}",style=ButtonStyle.secondary,disabled=True)

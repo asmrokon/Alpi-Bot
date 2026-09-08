@@ -26,48 +26,17 @@ from utils.db import (
 )
 from utils.feedchecker import get_new_chapters_info, has_new_chapter
 from utils.comicksearch import get_comick_search_result
-
+from utils.emojis import Emojis
 
 
 #* channel ID
 error_log_channel_id = int(getenv("error_log_channel_id"))
 spooks_id = int(getenv("spooks_id"))
 
-# Emojies
-ongoing_emoji = "<:ongoing:1453695986311499890>"
-cancelled_emoji = "<:cancelled:1453695978157899863>"
-hiatus_emoji = "<:hiatus:1453695980355457225>"
-completed_emoji = "<:completed:1453695983245590661>"
-bookmark_emoji = "<:bookmark:1453666289003270310>"
-star_emoji = "<:star:1453667947070357646>"
-bin_emoji = "<:bin:1453439435973857513>"
-previous_emoji = "<:previous:1457434026435547352>"
-next_emoji = "<:next:1457434023344476160>"
-chapter_emoji = "<:chapter:1453761149542858772>"
-cursor_emoji = "<:cursor:1453762353505112097>"
-paint_emoji = "<:paintpalette:1455488871730249839>"
-calender_emoji = "<:calendar:1455488760778330112>"
-rank_emoji = "<:rank:1455488758341304458>"
-pen_emoji = "<:pen:1455488756172718213>"
-checked_emoji = "<:checked:1455488754243600416>"
-blueshield_emoji = "<:blueshield:1455488752205172756>"
-warning_emoji = "<:warning:1455488750128861237>"
-redshield_emoji = "<:accessdenied:1455488748166053909>"
-sword_emoji = "<:sword:1455488745762459780>"
-flower_emoji = "<:flower:1455488743627821137>"
-moon_emoji = "<:moon:1455488741325144085>"
-coffee_emoji = "<:coffee:1455488739181858932>"
-percent_emoji = "<:percent:1455530697417560085>"
-status_emoji = "<:status:1455530488067526758>"
-demographic_emoji = "<:demographics:1455530485634695294>"
-click_emoji = "<:click:1457434566477353083>"
-search_emoji = "<:research:1457434865057267858>"
-pages_emoji = "<:pages:1457439201753829537>"
-info_emoji = "<:info:1457442292842365213>"
 
-status_conv_with_emoji = {1:f"Ongoing  {ongoing_emoji}", 2:f"Completed  {completed_emoji}",3:f"Cancelled  {cancelled_emoji}", 4:f"Hiatus  {hiatus_emoji}"}  
-content_rating_conv = {"safe": f"Safe  {checked_emoji}","suggestive":f"Suggestive  {blueshield_emoji}","erotica":f"Erotica  {warning_emoji}","pornographic":f"Pornographic  {redshield_emoji}"}
-demographic_conv_with_emoji = {1:f"Shonen  {sword_emoji}",2:f"Shoujo  {flower_emoji}",3:f"Seinen  {coffee_emoji}",4:f"Josei  {moon_emoji}",0: "None"}
+status_conv_with_emoji = {1:f"Ongoing  {Emojis.ongoing}", 2:f"Completed  {Emojis.completed}",3:f"Cancelled  {Emojis.cancelled}", 4:f"Hiatus  {Emojis.hiatus}"}  
+content_rating_conv = {"safe": f"Safe  {Emojis.checked}","suggestive":f"Suggestive  {Emojis.blueshield}","erotica":f"Erotica  {Emojis.warning}","pornographic":f"Pornographic  {Emojis.redshield}"}
+demographic_conv_with_emoji = {1:f"Shonen  {Emojis.sword}",2:f"Shoujo  {Emojis.flower}",3:f"Seinen  {Emojis.coffee}",4:f"Josei  {Emojis.moon}",0: "None"}
 
 #* Predefined embed messages for various bot responses
 embed_messages = {
@@ -767,10 +736,10 @@ class TrendingView(ui.LayoutView):
             custom_id_1 = f"{self.cur_page * self.limit_per_page + idx}_{len(self.manga_dicts[start_index:last_index])}"
             custom_id_2 = f"{self.cur_page * self.limit_per_page + idx}.{len(self.manga_dicts[start_index:last_index])}"
 
-            add_button = Button(label="Add",emoji=bookmark_emoji,style=ButtonStyle.secondary,custom_id=custom_id_1)
+            add_button = Button(label="Add",emoji=Emojis.bookmark,style=ButtonStyle.secondary,custom_id=custom_id_1)
             add_button.callback = self.add_manga
 
-            detail_button = Button(label="Details",emoji=info_emoji,style=ButtonStyle.secondary,custom_id=custom_id_2) 
+            detail_button = Button(label="Details",emoji=Emojis.info,style=ButtonStyle.secondary,custom_id=custom_id_2) 
             detail_button.callback = self.detail_manga
                         
             section_buttons_row = ui.ActionRow()
@@ -786,10 +755,10 @@ class TrendingView(ui.LayoutView):
             
         buttons_row = ui.ActionRow()
 
-        previous_button = Button(emoji=previous_emoji, style=ButtonStyle.secondary)
+        previous_button = Button(emoji=Emojis.previous, style=ButtonStyle.secondary)
         previous_button.callback = self.previous_page
 
-        next_button = Button(emoji=next_emoji, style=ButtonStyle.secondary)
+        next_button = Button(emoji=Emojis.next, style=ButtonStyle.secondary)
         next_button.callback = self.next_page
 
         footer_button = Button(label=f"Page {self.cur_page+1} of {self.total_page}",style=ButtonStyle.secondary,disabled=True)
@@ -799,7 +768,7 @@ class TrendingView(ui.LayoutView):
         
         for i in range(self.total_page):
             if i == self.cur_page:      
-                page_navigate_select.append_option(discord.SelectOption(label=f"Page {i + 1}",value=str(i),emoji=pages_emoji,default=True))
+                page_navigate_select.append_option(discord.SelectOption(label=f"Page {i + 1}",value=str(i),emoji=Emojis.pages,default=True))
             elif i != self.cur_page:
                 page_navigate_select.append_option(discord.SelectOption(label=f"Page {i + 1}",value=str(i)))
                                 
@@ -810,7 +779,7 @@ class TrendingView(ui.LayoutView):
                 
         for day in self.base_days:
             if int(day) == int(self.chosen_day):
-                days_navigate_select.append_option(discord.SelectOption(label=f"Last {day} days",value=str(day),emoji=calender_emoji,default=True))
+                days_navigate_select.append_option(discord.SelectOption(label=f"Last {day} days",value=str(day),emoji=Emojis.calender,default=True))
             elif int(day) != int(self.chosen_day):
                 days_navigate_select.append_option(discord.SelectOption(label=f"Last {day} days",value=str(day)))
             
@@ -1027,7 +996,7 @@ class SingleMangaView(ui.LayoutView):
 
         authors = manga_dict["authors"]
         artists = manga_dict["artists"]
-        latest_ch = f"{manga_dict["latest_chapter"]}  {chapter_emoji}"
+        latest_ch = f"{manga_dict["latest_chapter"]}  {Emojis.chapter}"
         rating = f"{float(manga_dict['bayesian_rating']):.2f}".ljust(7)
         start_year = str(manga_dict["start_year"]).ljust(7)
         status = status_conv_with_emoji[int(manga_dict["status"])]
@@ -1043,17 +1012,17 @@ class SingleMangaView(ui.LayoutView):
 
         buttons_row = ui.ActionRow()
 
-        previous_button = Button(emoji=previous_emoji, style=ButtonStyle.secondary)
+        previous_button = Button(emoji=Emojis.previous, style=ButtonStyle.secondary)
         previous_button.callback = self.previous_manga
         
         footer_button = Button(label=f"Manga {self.cur_page + 1} of {len(self.manga_dicts)}",style=ButtonStyle.blurple)
         footer_button.callback = self.send_page_modal
 
 
-        next_button = Button(emoji=next_emoji, style=ButtonStyle.secondary)
+        next_button = Button(emoji=Emojis.next, style=ButtonStyle.secondary)
         next_button.callback = self.next_manga
 
-        remove_button = Button(emoji=bin_emoji, style=ButtonStyle.danger)
+        remove_button = Button(emoji=Emojis.bin, style=ButtonStyle.danger)
         remove_button.callback = self.remove_manga
         slug_for_link = quote(manga_dict["slug"],safe="")            
         web_view_button = Button(label="Open on web",style=ButtonStyle.url,url=f"https://comick.dev/comic/{slug_for_link}")
@@ -1063,7 +1032,7 @@ class SingleMangaView(ui.LayoutView):
             navigate_select = ui.Select(placeholder=f"{manga_dict['title']}")
             for idx, manga in enumerate(self.manga_dicts[:25],start=0):            
                 if idx == self.cur_page:
-                    navigate_select.append_option(discord.SelectOption(label=f"{manga["title"][:99]}",value=str(idx),emoji=pages_emoji,default=True))
+                    navigate_select.append_option(discord.SelectOption(label=f"{manga["title"][:99]}",value=str(idx),emoji=Emojis.pages,default=True))
                 else:
                     navigate_select.append_option(discord.SelectOption(label=f"{manga["title"][:99]}",value=str(idx)))
             navigate_select.callback = self.go_to_page
@@ -1209,14 +1178,14 @@ class CompactMangaView(ui.LayoutView):
         
         for idx, manga in enumerate(self.manga_dicts[start_index:last_index],start=0):
             section = ui.Section(
-                ui.TextDisplay(f"### {manga['title']}\n**Author**: {manga["authors"]}\n**Last Ch**:  {manga["latest_chapter"]}   {chapter_emoji}\n**Status**: {status_conv_with_emoji[int(manga["status"])]}"),
+                ui.TextDisplay(f"### {manga['title']}\n**Author**: {manga["authors"]}\n**Last Ch**:  {manga["latest_chapter"]}   {Emojis.chapter}\n**Status**: {status_conv_with_emoji[int(manga["status"])]}"),
                 accessory=ui.Thumbnail(manga["cover_url"])
             )
             section_buttons_row = ui.ActionRow()
 
             custom_id_2 = f"{self.cur_page * self.limit_per_page + idx}.{len(self.manga_dicts[start_index:last_index])}"
 
-            detail_button = Button(label="Details",emoji=info_emoji,style=ButtonStyle.secondary,custom_id=custom_id_2) 
+            detail_button = Button(label="Details",emoji=Emojis.info,style=ButtonStyle.secondary,custom_id=custom_id_2) 
             detail_button.callback = self.detail_manga
 
             section_buttons_row.add_item(detail_button)
@@ -1230,10 +1199,10 @@ class CompactMangaView(ui.LayoutView):
         
         buttons_row = ui.ActionRow()
 
-        previous_button = Button(emoji=previous_emoji, style=ButtonStyle.secondary)
+        previous_button = Button(emoji=Emojis.previous, style=ButtonStyle.secondary)
         previous_button.callback = self.previous_page
 
-        next_button = Button(emoji=next_emoji, style=ButtonStyle.secondary)
+        next_button = Button(emoji=Emojis.next, style=ButtonStyle.secondary)
         next_button.callback = self.next_page
                 
         footer_button = Button(label=f"Manga {self.cur_page + 1} of {self.total_page}",style=ButtonStyle.blurple)
@@ -1244,7 +1213,7 @@ class CompactMangaView(ui.LayoutView):
             navigate_select = ui.Select(placeholder="Jump to page")        
             for page_num in range(self.total_page):
                 if page_num == self.cur_page:
-                    navigate_select.append_option(discord.SelectOption(label=f"Page {page_num + 1}",value=str(page_num),emoji=pages_emoji,default=True))
+                    navigate_select.append_option(discord.SelectOption(label=f"Page {page_num + 1}",value=str(page_num),emoji=Emojis.pages,default=True))
                 else:
                     navigate_select.append_option(discord.SelectOption(label=f"Page {page_num + 1}",value=str(page_num)))
                                     
@@ -1375,7 +1344,7 @@ class RemoveMangaView(ui.LayoutView):
 
         for idx, manga in enumerate(self.manga_dicts[start_index:last_index],start=0):
             section = ui.Section(
-                ui.TextDisplay(f"### {manga['title']}\n**Author**: {manga['authors']}\n**Last Ch**:  {manga['latest_chapter']}   {chapter_emoji}\n**Status**: {status_conv_with_emoji[int(manga['status'])]}"),
+                ui.TextDisplay(f"### {manga['title']}\n**Author**: {manga['authors']}\n**Last Ch**:  {manga['latest_chapter']}   {Emojis.chapter}\n**Status**: {status_conv_with_emoji[int(manga['status'])]}"),
                 accessory=ui.Thumbnail(manga["cover_url"])
             )
             container.add_item(section)
@@ -1400,7 +1369,7 @@ class RemoveMangaView(ui.LayoutView):
         
         for page_num in range(self.total_page):
             if page_num == self.cur_page:
-                navigate_select.append_option(discord.SelectOption(label=f"Page {page_num + 1}",value=str(page_num),emoji=pages_emoji,default=True))
+                navigate_select.append_option(discord.SelectOption(label=f"Page {page_num + 1}",value=str(page_num),emoji=Emojis.pages,default=True))
             else:
                 navigate_select.append_option(discord.SelectOption(label=f"Page {page_num + 1}",value=str(page_num)))
                                 
@@ -1409,10 +1378,10 @@ class RemoveMangaView(ui.LayoutView):
         
         buttons_row = ui.ActionRow()
 
-        previous_button = Button(emoji=previous_emoji, style=ButtonStyle.secondary)
+        previous_button = Button(emoji=Emojis.previous, style=ButtonStyle.secondary)
         previous_button.callback = self.previous_page
 
-        next_button = Button(emoji=next_emoji, style=ButtonStyle.secondary)
+        next_button = Button(emoji=Emojis.next, style=ButtonStyle.secondary)
         next_button.callback = self.next_page
 
         buttons_row.add_item(previous_button)
@@ -1543,7 +1512,7 @@ class SearchResultView(ui.LayoutView):
             short_desc = f"{manga["description"][:180]}..." if len(manga["description"]) > 180 else manga["description"]
 
             section = ui.Section(
-                ui.TextDisplay(f"### {manga['title']}\n{chapter_emoji} Ch. {manga["latest_chapter"]}   **•**   {status_conv_with_emoji[int(manga["status"])]}   **•**   {star_emoji} {manga["rating"]}\n{short_desc}"),
+                ui.TextDisplay(f"### {manga['title']}\n{Emojis.chapter} Ch. {manga["latest_chapter"]}   **•**   {status_conv_with_emoji[int(manga["status"])]}   **•**   {Emojis.star} {manga["rating"]}\n{short_desc}"),
                 accessory=ui.Thumbnail(manga["cover_url"])
             )
             section_buttons_row = ui.ActionRow()
@@ -1551,10 +1520,10 @@ class SearchResultView(ui.LayoutView):
             custom_id = f"{self.cur_page * self.limit_per_page + idx}_{len(self.manga_dicts[start_index:last_index])}"
             custom_id_2 = f"{self.cur_page * self.limit_per_page + idx}.{len(self.manga_dicts[start_index:last_index])}"
 
-            detail_button = Button(label="Details",emoji=info_emoji,style=ButtonStyle.secondary,custom_id=custom_id_2) 
+            detail_button = Button(label="Details",emoji=Emojis.info,style=ButtonStyle.secondary,custom_id=custom_id_2) 
             detail_button.callback = self.detail_manga
 
-            add_button = Button(label="Add",emoji=bookmark_emoji,style=ButtonStyle.gray,custom_id=custom_id)
+            add_button = Button(label="Add",emoji=Emojis.bookmark,style=ButtonStyle.gray,custom_id=custom_id)
             add_button.callback = self.add_manga
             
             section_buttons_row.add_item(add_button)
@@ -1569,10 +1538,10 @@ class SearchResultView(ui.LayoutView):
             
         buttons_row = ui.ActionRow()
 
-        previous_button = Button(emoji=previous_emoji, style=ButtonStyle.secondary)
+        previous_button = Button(emoji=Emojis.previous, style=ButtonStyle.secondary)
         previous_button.callback = self.previous_page
 
-        next_button = Button(emoji=next_emoji, style=ButtonStyle.secondary)
+        next_button = Button(emoji=Emojis.next, style=ButtonStyle.secondary)
         next_button.callback = self.next_page
 
         footer_button = Button(label=f"Page {self.cur_page+1} of {self.total_page}",style=ButtonStyle.secondary,disabled=True)
@@ -1582,7 +1551,7 @@ class SearchResultView(ui.LayoutView):
         
         for i in range(self.total_page):
             if i == self.cur_page:      
-                navigate_select.append_option(discord.SelectOption(label=f"Page {i + 1}",value=str(i),emoji=pages_emoji,default=True))
+                navigate_select.append_option(discord.SelectOption(label=f"Page {i + 1}",value=str(i),emoji=Emojis.pages,default=True))
             elif i != self.cur_page:
                 navigate_select.append_option(discord.SelectOption(label=f"Page {i + 1}",value=str(i)))
                                 

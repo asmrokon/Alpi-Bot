@@ -4,9 +4,8 @@ from typing import Literal
 import discord
 import json
 from discord.ext import commands
+from utils.emojis import Emojis
 
-with open("database/emojies.json","r") as f:
-    emoji = json.load(f)
 
 
 class EventCog(commands.Cog):
@@ -46,18 +45,18 @@ class CommandView(ui.LayoutView):
         # Manga
         if self.chosen_ctg == "manga":
             manga_text_1 = ui.TextDisplay(
-                content=f"## {emoji['search']} Discovery\n{cmd_ls['search']['embed']}  {cmd_ls['search']['args']}\n-# {cmd_ls['search']['desc']}\n\n{cmd_ls['trending']['embed']}  {cmd_ls['trending']['args']}\n-# {cmd_ls['trending']['desc']}"
+                content=f"## {Emojis.research} Discovery\n{cmd_ls['search']['embed']}  {cmd_ls['search']['args']}\n-# {cmd_ls['search']['desc']}\n\n{cmd_ls['trending']['embed']}  {cmd_ls['trending']['args']}\n-# {cmd_ls['trending']['desc']}"
             )
 
             manga_text_2 = ui.TextDisplay(
-                content=f"## {emoji['library']} Library\n{cmd_ls['add']['embed']}  {cmd_ls['add']['args']}\n-# {cmd_ls['add']['desc']}\n\n{cmd_ls['remove']['embed']}  {cmd_ls['remove']['args']}\n-# {cmd_ls['remove']['desc']}\n\n{cmd_ls['list']['embed']}  {cmd_ls['list']['args']}\n-# {cmd_ls['list']['desc']}"
+                content=f"## {Emojis.library} Library\n{cmd_ls['add']['embed']}  {cmd_ls['add']['args']}\n-# {cmd_ls['add']['desc']}\n\n{cmd_ls['remove']['embed']}  {cmd_ls['remove']['args']}\n-# {cmd_ls['remove']['desc']}\n\n{cmd_ls['list']['embed']}  {cmd_ls['list']['args']}\n-# {cmd_ls['list']['desc']}"
             )
 
 
         # News
         elif self.chosen_ctg == "news":
             news_text_1 = ui.TextDisplay(
-                content=f"## {emoji['newspaper']} Animanga News\n{cmd_ls['news']['embed']}  {cmd_ls['news']['args']}\n-# {cmd_ls['news']['desc']}\n\n{cmd_ls['subscribe']['embed']}  {cmd_ls['subscribe']['args']}\n-# {cmd_ls['subscribe']['desc']}\n\n{cmd_ls['unsubscribe']['embed']}  {cmd_ls['unsubscribe']['args']}\n-# {cmd_ls['unsubscribe']['desc']}"
+                content=f"## {Emojis.newspaper} Animanga News\n{cmd_ls['news']['embed']}  {cmd_ls['news']['args']}\n-# {cmd_ls['news']['desc']}\n\n{cmd_ls['subscribe']['embed']}  {cmd_ls['subscribe']['args']}\n-# {cmd_ls['subscribe']['desc']}\n\n{cmd_ls['unsubscribe']['embed']}  {cmd_ls['unsubscribe']['args']}\n-# {cmd_ls['unsubscribe']['desc']}"
             )
                               
 
@@ -66,14 +65,14 @@ class CommandView(ui.LayoutView):
         for ctg in self.ctgs:
             if ctg == str(self.chosen_ctg):
                 if ctg == "manga":
-                    ctg_select.add_option(label=ctg.capitalize(),value=ctg,default=True,emoji=emoji["manga"])
+                    ctg_select.add_option(label=ctg.capitalize(),value=ctg,default=True,emoji=Emojis.manga)
                 elif ctg == "news":
-                    ctg_select.add_option(label=ctg.capitalize(),value=ctg,default=True,emoji=emoji["megaphone"])
+                    ctg_select.add_option(label=ctg.capitalize(),value=ctg,default=True,emoji=Emojis.megaphone)
             else:
                 if ctg == "manga":
-                    ctg_select.add_option(label=ctg.capitalize(),value=ctg,emoji=emoji["manga"])
+                    ctg_select.add_option(label=ctg.capitalize(),value=ctg,emoji=Emojis.manga)
                 elif ctg == "news":
-                    ctg_select.add_option(label=ctg.capitalize(),value=ctg,emoji=emoji["megaphone"])                
+                    ctg_select.add_option(label=ctg.capitalize(),value=ctg,emoji=Emojis.megaphone)                
         ctg_select.callback = self.go_to_ctg
 
         ctg_action_row.add_item(ctg_select)
