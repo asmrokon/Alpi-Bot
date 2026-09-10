@@ -33,3 +33,6 @@ class Emojis:
     newspaper = "<:newspaper:1457803119617380538>"
     manga = "<:manga:1457820961066848392>"
     megaphone = "<:megaphone:1457808254964076686>"
+    mal = "<:mal:1452372315277885462>"
+    croll = "<:croll:1452370897817047318>"
+    ann = "<:ann:1547295987368857790>"
