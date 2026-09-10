@@ -2,3 +2,4 @@ discord
 python-dotenv
 aiosqlite
 aiohttp
+beautifulsoup4

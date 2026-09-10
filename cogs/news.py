@@ -7,6 +7,11 @@ from discord import ButtonStyle, app_commands, ui
 from discord.ext import commands
 from discord.ui import Button
 
+from utils.ann_parser import (
+    fetch_image,
+    get_latest_ann_news_list,
+    get_latest_ann_news_list_from_source,
+)
 from utils.crollparser import (
     get_latest_croll_news_list,
     get_latest_croll_news_list_from_source,
@@ -39,6 +44,7 @@ class NewsCog(commands.Cog):
     async def cog_load(self): 
         asyncio.create_task(self.check_news_croll())
         asyncio.create_task(self.check_news_mal())
+        asyncio.create_task(self.check_news_ann())
 
 
 #                                               APP COMMANDS
@@ -53,7 +59,7 @@ class NewsCog(commands.Cog):
     @app_commands.describe(source="Select a news source")
     @app_commands.user_install()
     @app_commands.checks.dynamic_cooldown(cooldown_for_everyone_but_me)
-    async def news(self, interaction: discord.Interaction,source: Literal["Crunchyroll News","MyAnimeList News"]):
+    async def news(self, interaction: discord.Interaction,source: Literal["Crunchyroll News","MyAnimeList News","Anime News Network"]):
         src = str(source).lower()
 
         await interaction.response.defer()
@@ -101,14 +107,39 @@ class NewsCog(commands.Cog):
                     
                     await interaction.followup.send(view=layout_view)
             else:
-                await interaction.followup.send(content="Something went wrong fetching the news. Try again later!")            
+                await interaction.followup.send(content="Something went wrong fetching the news. Try again later!")      
+
+
+        elif src == "anime news network":
+            result = await get_latest_ann_news_list_from_source()
+            
+            new = result["new_news"]
+            news_list = result["news"]
+
+
+            if news_list:
+                if new:                
+                    layout_view = SingleNewsView(news_list=news_list,source="ann",dc_id=interaction.user.id)
+                    await layout_view.single_news_view()
+                    
+                    await interaction.followup.send(view=layout_view,file=layout_view.thumbnail_file)
+                    await self.check_news_mal(once=True)
+                else:       
+                    layout_view = SingleNewsView(news_list=news_list,source="ann",dc_id=interaction.user.id)
+                    await layout_view.single_news_view()
+                    
+                    await interaction.followup.send(view=layout_view,file=layout_view.thumbnail_file)
+                if layout_view.thn_path:
+                    layout_view.thn_path.unlink(missing_ok=True)                    
+            else:
+                await interaction.followup.send(content="Something went wrong fetching the news. Try again later!")  
 
 
     @app_commands.command(name="subscribe",description="Subscribe to Anime News updates")
     @app_commands.describe(source="Select a news source")
     @app_commands.user_install()
     @app_commands.checks.dynamic_cooldown(cooldown_for_everyone_but_me)
-    async def subscribe(self, interaction: discord.Interaction,source: Literal["Crunchyroll News","MyAnimeList News"]):
+    async def subscribe(self, interaction: discord.Interaction,source: Literal["Crunchyroll News","MyAnimeList News","Anime News Network"]):
         src = str(source).lower()
         if src == "crunchyroll news":
             await update_subscribscription(
@@ -122,6 +153,12 @@ class NewsCog(commands.Cog):
                 source="mal",
                 num=1
                 )
+        elif src == "anime news network":
+            await update_subscribscription(
+                dc_id=interaction.user.id,
+                source="ann",
+                num=1
+                )                
         await interaction.response.send_message(
             content=f"You have successfully subscribed to **{source}**.\nYou will now receive updates via direct messages.\n-# To unsubscribe, use `/unsubscribe {source}`",
             ephemeral=True
@@ -132,7 +169,7 @@ class NewsCog(commands.Cog):
     @app_commands.describe(source="Select a news source")
     @app_commands.user_install()
     @app_commands.checks.dynamic_cooldown(cooldown_for_everyone_but_me)
-    async def unsubscribe(self, interaction: discord.Interaction,source: Literal["Crunchyroll News","MyAnimeList News"]):
+    async def unsubscribe(self, interaction: discord.Interaction,source: Literal["Crunchyroll News","MyAnimeList News","Anime News Network"]):
         src = str(source).lower()
         if src == "crunchyroll news":
             await update_subscribscription(
@@ -146,6 +183,12 @@ class NewsCog(commands.Cog):
                 source="mal",
                 num=0
                 )
+        elif src == "anime news network":
+            await update_subscribscription(
+                dc_id=interaction.user.id,
+                source="ann",
+                num=0
+                )                
         await interaction.response.send_message(
             content=f"You have successfully unsubscribed from **{source}**.\n-# To subscribe again, use `/subscribe {source}`",
             ephemeral=True
@@ -157,8 +200,6 @@ class NewsCog(commands.Cog):
     """
                                         ///     RSS FEED CHECKER      ///
     """ 
- 
-
 
     async def check_news_croll(self,once=False):
         await self.bot.wait_until_ready()
@@ -337,6 +378,94 @@ class NewsCog(commands.Cog):
                             )             
 
 
+    async def check_news_ann(self,once=False):
+        await self.bot.wait_until_ready()
+
+        excep_error_channel = self.bot.get_channel(error_log_channel_id)
+        if not once:
+            while True:
+                news_list = await get_latest_ann_news_list()
+                if news_list:
+                    for news in reversed(news_list):
+                        news_view = NewsNotificationView(news,"ann")
+                        await news_view.news_cv2()
+
+                        dc_ids = await get_subscribers_list("ann")
+                        for dc_id in dc_ids:
+                            try:
+                                user = self.bot.get_user(dc_id)
+                                if user is None:
+                                    try:
+                                        user = await self.bot.fetch_user(dc_id)
+                                    except discord.NotFound:
+                                        await excep_error_channel.send(f"User `{dc_id} does not exist at all.")
+                                    except discord.HTTPException:
+                                        await excep_error_channel.send(
+                                            f"Could not fetch {dc_id}'s user info to send News"
+                                        )                         
+                                await user.send(view=news_view,file=news_view.thumbnail_file)
+                            except discord.Forbidden:
+                                await excep_error_channel.send(
+                                    f"Could not DM. {user.name}'s DM is locked. DISCORD ID: `{user.id}`"
+                                    )
+                            except discord.NotFound:
+                                await excep_error_channel.send(
+                                    f"Could not send News: User with ID `{dc_id}` not found (may have deleted their account or been banned)."
+                                )
+                            except discord.HTTPException:
+                                await excep_error_channel.send(
+                                    f"Could not fetch {dc_id}'s user info to send News"
+                                )
+                            except Exception as e:
+                                await excep_error_channel.send(
+                                    f"Could not send News to `{dc_id}`\nError:```{e}```"
+                                )             
+                        if news_view.thn_path:
+                            news_view.thn_path.unlink(missing_ok=True)
+
+                
+                await asyncio.sleep(360)
+        else:
+            news_list = await get_latest_ann_news_list()
+            if news_list:
+                for news in reversed(news_list):
+                    news_view = NewsNotificationView(news,"ann")
+                    await news_view.news_cv2()
+
+                    dc_ids = await get_subscribers_list("ann")
+                    for dc_id in dc_ids:
+                        try:
+                            user = self.bot.get_user(dc_id)
+                            if user is None:
+                                try:
+                                    user = await self.bot.fetch_user(dc_id)
+                                except discord.NotFound:
+                                    await excep_error_channel.send(f"User `{dc_id} does not exist at all.")
+                                except discord.HTTPException:
+                                    await excep_error_channel.send(
+                                        f"Could not fetch {dc_id}'s user info to send News"
+                                    )                         
+
+                            await user.send(view=news_view)
+                        except discord.Forbidden:
+                            await excep_error_channel.send(
+                                f"Could not DM. {user.name}'s DM is locked. DISCORD ID: `{user.id}`"
+                                )
+                        except discord.NotFound:
+                            await excep_error_channel.send(
+                                f"Could not send News: User with ID `{dc_id}` not found (may have deleted their account or been banned)."
+                            )
+                        except discord.HTTPException:
+                            await excep_error_channel.send(
+                                f"Could not fetch {dc_id}'s user info to send News"
+                            )
+                        except Exception as e:
+                            await excep_error_channel.send(
+                                f"Could not send News to `{dc_id}`\nError:```{e}```"
+                            )             
+
+
+
 
 #                                               APP COMMAND ERROR HANDLER
     """
@@ -367,18 +496,25 @@ class NewsCog(commands.Cog):
 
 
 class NewsNotificationView(ui.LayoutView):
+
+    SOURCE_INFO = {
+        "mal": (Emojis.mal, "MyAnimeList News"),
+        "croll": (Emojis.croll, "Crunchyroll News"),
+        "ann": (Emojis.ann, "Anime News Network"),
+    }
+
     def __init__(self, news, source):
         super().__init__()
         self.news = news
         self.source = source
+        self.thn_path = None    
+        self.thumbnail_file = None        
 
     async def news_cv2(self): 
             container = ui.Container()
 
-            if self.source == "mal":
-                source_name = ui.TextDisplay(content=f"<:mal:1452372315277885462>  **MyAnimeList News**  <t:{self.news["timestamp"]}:s>")
-            elif self.source == "croll":
-                source_name = ui.TextDisplay(content=f"<:croll:1452370897817047318>  **Crunchyroll News**  <t:{self.news["timestamp"]}:s>")
+            emoji, source_name = self.SOURCE_INFO[self.source]
+            source_name = ui.TextDisplay(content=f"{emoji}  **{source_name}**  <t:{self.news['timestamp']}:s>")          
             
             container.add_item(source_name)
 
@@ -386,13 +522,22 @@ class NewsNotificationView(ui.LayoutView):
             container.add_item(title)
             container.add_item(ui.Separator(spacing=discord.SeparatorSpacing.small))
             
-            if self.source == "mal":
+            if self.source in {"mal","ann"}:
                 content = ui.TextDisplay(content=self.news["description"])
             elif self.source == "croll":
                 content = ui.TextDisplay(content=self.news["content"])
             container.add_item(content)
 
-            thumbnail = ui.MediaGallery(discord.MediaGalleryItem(self.news["image_url"]))
+            if self.source in {"mal","croll"}:
+                thumbnail = ui.MediaGallery(discord.MediaGalleryItem(self.news["image_url"]))
+            elif self.source == "ann":
+                self.thn_path = await fetch_image(self.news["image_url"])                
+                if self.thn_path:
+                    self.thumbnail_file = discord.File(fp=self.thn_path)
+                    thumbnail = ui.MediaGallery(discord.MediaGalleryItem(self.thumbnail_file.uri))
+                else:
+                    thumbnail = ui.MediaGallery(discord.MediaGalleryItem("https://i.ytimg.com/vi/zuk_UJIRnik/maxresdefault.jpg"))
+
             container.add_item(thumbnail)
 
             self.add_item(container)
@@ -405,12 +550,20 @@ class NewsNotificationView(ui.LayoutView):
 
 
 class SingleNewsView(ui.LayoutView):
+    SOURCE_INFO = {
+        "mal": (Emojis.mal, "MyAnimeList News"),
+        "croll": (Emojis.croll, "Crunchyroll News"),
+        "ann": (Emojis.ann, "Anime News Network"),
+    }
+
     def __init__(self, news_list, source,dc_id):
         super().__init__()
         self.news_list = news_list
         self.cur_page = 1
         self.source = source
         self.dc_id = dc_id
+        self.thn_path = None
+        self.thumbnail_file = None
 
     #* Generate embed for current news page
     async def single_news_view(self):
@@ -420,21 +573,27 @@ class SingleNewsView(ui.LayoutView):
 
 
         container = ui.Container()
-
-        if self.source == "mal":
-            source_name = ui.TextDisplay(content=f"<:mal:1452372315277885462>  **MyAnimeList News**  <t:{self.news_list[num]["timestamp"]}:s>")
-        elif self.source == "croll":
-            source_name = ui.TextDisplay(content=f"<:croll:1452370897817047318>  **Crunchyroll News**  <t:{self.news_list[num]["timestamp"]}:s>")
+        
+        emoji, source_name = self.SOURCE_INFO[self.source]
+        source_name = ui.TextDisplay(content=f"{emoji}  **{source_name}**  <t:{self.news_list[num]['timestamp']}:s>")           
         
 
         title = ui.TextDisplay(content=f"## {self.news_list[num]['title']}")
         
-        if self.source == "mal":
+        if self.source in {"mal","ann"}:
             content = ui.TextDisplay(content=self.news_list[num]["description"])
         elif self.source == "croll":
             content = ui.TextDisplay(content=self.news_list[num]["content"])
 
-        thumbnail = ui.MediaGallery(discord.MediaGalleryItem(self.news_list[num]["image_url"]))
+        if self.source in {"mal","croll"}:
+            thumbnail = ui.MediaGallery(discord.MediaGalleryItem(self.news_list[num]["image_url"]))
+        elif self.source == "ann":
+            self.thn_path = await fetch_image(self.news_list[num]["image_url"])                
+            if self.thn_path:
+                self.thumbnail_file = discord.File(fp=self.thn_path)
+                thumbnail = ui.MediaGallery(discord.MediaGalleryItem(self.thumbnail_file.uri))
+            else:
+                thumbnail = ui.MediaGallery(discord.MediaGalleryItem("https://i.ytimg.com/vi/zuk_UJIRnik/maxresdefault.jpg"))
 
         buttons_row = ui.ActionRow()
         link_button = Button(label="Open on web", style=ButtonStyle.link, url=self.news_list[num]["news_url"])
@@ -482,7 +641,14 @@ class SingleNewsView(ui.LayoutView):
         self.cur_page = page_num
 
         await self.single_news_view()
-        await interaction.response.edit_message(view=self)
+
+        if self.source in {"mal","croll"}:
+            await interaction.response.edit_message(view=self)
+        elif self.source == "ann":
+            await interaction.response.edit_message(view=self,attachments=[self.thumbnail_file])   
+
+        if self.thn_path and self.source == "ann":
+            self.thn_path.unlink(missing_ok=True)      
 
     #* Go to previous news in the list
     async def previous_news(self, interaction: discord.Interaction):
@@ -492,17 +658,26 @@ class SingleNewsView(ui.LayoutView):
             )
             return
         total_page = len(self.news_list)
-
         if (self.cur_page - 1) == 0:
             self.cur_page = total_page
+
             await self.single_news_view()
-            
-            await interaction.response.edit_message(view=self)
+            if self.source in {"mal","croll"}:
+                await interaction.response.edit_message(view=self)
+            elif self.source == "ann":
+                await interaction.response.edit_message(view=self,attachments=[self.thumbnail_file])                
         else:
             self.cur_page -= 1
+
             await self.single_news_view()
             
-            await interaction.response.edit_message(view=self)
+            if self.source in {"mal","croll"}:
+                await interaction.response.edit_message(view=self)
+            elif self.source == "ann":
+                await interaction.response.edit_message(view=self,attachments=[self.thumbnail_file])            
+
+        if self.thn_path and self.source == "ann":
+            self.thn_path.unlink(missing_ok=True)     
 
     #* Go to next news in the list
     async def next_news(self, interaction: discord.Interaction):
@@ -516,13 +691,21 @@ class SingleNewsView(ui.LayoutView):
             self.cur_page = 1
             await self.single_news_view()
             
-            await interaction.response.edit_message(view=self)
+            if self.source in {"mal","croll"}:
+                await interaction.response.edit_message(view=self)
+            elif self.source == "ann":
+                await interaction.response.edit_message(view=self,attachments=[self.thumbnail_file])            
         else:
             self.cur_page += 1
             await self.single_news_view()
             
-            await interaction.response.edit_message(view=self)
+            if self.source in {"mal","croll"}:
+                await interaction.response.edit_message(view=self)
+            elif self.source == "ann":
+                await interaction.response.edit_message(view=self,attachments=[self.thumbnail_file])            
 
+        if self.thn_path and self.source == "ann":
+            self.thn_path.unlink(missing_ok=True)     
 
 
 async def setup(bot):

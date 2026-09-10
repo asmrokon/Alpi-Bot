@@ -54,6 +54,7 @@ Thumbs.db
 # Runtime / data files (do not commit local runtime state)
 last_croll_news.json
 last_mal_news.json
+last_ann_news.json
 database/*.db
 database/*.sqlite3
 database/*.sqlite
@@ -80,5 +81,5 @@ dist/
 
 test/
 todo.txt
-
+tmp/
 

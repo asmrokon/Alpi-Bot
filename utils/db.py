@@ -31,9 +31,9 @@ async def update_subscribscription(dc_id: str,source: str, num: int):
         await db.execute(
 """
 insert or ignore into users
-(dc_id,croll, mal)
-values (?,?,?)
-""",(dc_id,0,0))
+(dc_id,croll, mal, ann)
+values (?,?,?,?)
+""",(dc_id,0,0,0))
         await db.commit()
 
         await db.execute(f"update users set {source} = ? where dc_id = ?",(num,dc_id))
@@ -49,7 +49,8 @@ async def create_table_for_news_db():
 create table if not exists users (
     dc_id integer primary key,
     crunchyroll integer,
-    mal_news integer
+    mal_news integer,
+    ann integer
 )
 """)
 
